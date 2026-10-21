@@ -1,0 +1,7 @@
+{"file": ".trellis/tasks/10-21-modded-item-knowledge/research/05-synthesis.md", "reason": "汇总报告：真实数字、推荐架构与落地路线"}
+{"file": ".trellis/tasks/10-21-modded-item-knowledge/research/01-static-item-extraction.md", "reason": "key→id 规则、三坑、多信源合并与扫描原型结果"}
+{"file": ".trellis/tasks/10-21-modded-item-knowledge/research/06-cfpa-i18n-pack.md", "reason": "CFPA 汉化包下载源、zip 结构、key 形态与许可证"}
+{"file": ".trellis/tasks/10-21-modded-item-knowledge/research/02-runtime-dump.md", "reason": "KubeJS 运行时 dump 机制与命令面实测"}
+{"file": "main.py", "reason": "llm_tool 注册方式与权限体系"}
+{"file": "tools/game_tools.py", "reason": "give_item / clear_inventory 硬编码 bug 位置"}
+{"file": "tools/world_tools.py", "reason": "summon_entity 硬编码 bug 位置"}

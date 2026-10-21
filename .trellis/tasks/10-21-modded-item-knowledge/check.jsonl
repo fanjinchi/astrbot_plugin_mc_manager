@@ -1,0 +1,4 @@
+{"file": ".trellis/tasks/10-21-modded-item-knowledge/prd.md", "reason": "验收标准来源"}
+{"file": ".trellis/tasks/10-21-modded-item-knowledge/research/05-synthesis.md", "reason": "真实数字对照"}
+{"file": "tools/game_tools.py", "reason": "回归检查：命令拼装"}
+{"file": "tools/world_tools.py", "reason": "回归检查：命令拼装"}
