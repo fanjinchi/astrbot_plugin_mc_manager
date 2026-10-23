@@ -58,7 +58,7 @@
 物品知识库（`kb/`）需要把几万条「ID ↔ 名称」查询起来，这是唯一允许出现 SQLite 的场景。必须同时满足：
 
 - **不是真相来源。** 数据从 `<mc_server_dir>/mods/*.jar`、kubejs、CFPA 包、官方语言文件派生而来；
-  删除 `data/plugin_data/mc_manager/items.db` 后重跑 `/mc_kb_rebuild` 可完整恢复，不丢任何用户数据。
+  删除 `data/plugin_data/astrbot_plugin_mc_manager/items.db` 后重跑 `/mc_kb_rebuild` 可完整恢复，不丢任何用户数据。
 - **不需要迁移。** schema 版本写在 `meta` 表的 `schema_version` 里；改 schema 就全量重建，不做增量迁移。
 - **不用共享连接。** 每次操作各自 `sqlite3.connect()` + `contextmanager` 关闭，不设
   `check_same_thread=False`（重建在 `asyncio.to_thread` 线程写，查询在事件循环线程读）。
@@ -66,6 +66,10 @@
   （否则删掉的 mod 会留下僵尸行）。
 - **不当配置存。** 服主的配置仍在 `_conf_schema.json`；`zh_cn_extra.json` 是用户手写的输入文件，
   不是插件的状态存储。
+- **minecraft: 命名空间以原版验证集为准。** mod 的 `data/`（recipe/loot/tag）会引用其他 MC 版本
+  或不存在的原版 ID（实测 1.20.1 服混入 1.21 的 `minecraft:mace`），scanner 无法分辨；落库前
+  `kb/builder.py` 必须与 `kb/vanilla.py` 的验证集取交集剔除，否则 LLM 会查到幻影条目去 give。
+  验证集为空（非 Forge 安装等）时降级跳过并告警，不能反向误删。
 
 新增别的"想持久化"的东西时，先按上面的表找 MC 侧或 AstrBot 配置的落点；只有"可重建的派生缓存"
 这一个理由才允许加 SQLite，且必须能一句话说清"删了怎么重建"。
