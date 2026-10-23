@@ -65,12 +65,12 @@ class MCManagerPlugin(Star):
         self.vanilla_zh_download = self.config.get("vanilla_zh_download", True)
         self.cfpa_auto_download = self.config.get("cfpa_auto_download", True)
         
-        # 物品知识库（mods/ 的派生缓存，数据目录 = AstrBot/data/plugin_data/mc_manager）
+        # 物品知识库（mods/ 的派生缓存，数据目录 = AstrBot/data/plugin_data/astrbot_plugin_mc_manager）
         self.kb = None
         try:
             from astrbot.core.star.star_tools import StarTools
             self.kb = KnowledgeBase(
-                data_dir=StarTools.get_data_dir("mc_manager"),
+                data_dir=StarTools.get_data_dir("astrbot_plugin_mc_manager"),
                 server_dir=self.mc_server_dir,
                 mc_version=self.mc_version,
                 client_dir=self.mc_client_dir,
