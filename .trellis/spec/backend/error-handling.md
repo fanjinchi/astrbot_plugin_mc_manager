@@ -80,7 +80,7 @@ if cmd_base in dangerous_commands and not _enable_dangerous_commands:
     return f"错误: 命令 '{cmd_base}' 是危险命令，已被禁用。"
 ```
 
-### D. 事件管线边界：整段 try/except + 只记日志（`main.py:232-281`、`:294-335`、`:404-447`）
+### D. 事件管线边界：整段 try/except + 只记日志（`main.py:200-259`、`:261-313`、`:337-382`）
 
 ```python
 async def _send_fake_event(self, player: str, message: str):
@@ -92,19 +92,7 @@ async def _send_fake_event(self, player: str, message: str):
 
 这些方法是日志回调，由 `LogClient` 用 `create_task` 调度；必须自己吞异常并记录。
 
-### E. 脚本执行：结构化结果 + traceback（`script_executor.py:153-162`）
-
-```python
-except Exception as e:
-    error_msg = f"{type(e).__name__}: {str(e)}\n{traceback.format_exc()}"
-    logger.error(f"脚本 [{script_id}] 执行失败: {error_msg}")
-    return {"success": False, "script_id": script_id, "output": "\n".join(output_lines), "error": error_msg}
-```
-
-超时走 `asyncio.wait_for` + `task.cancel()`，返回 `status: "timeout"`（`script_executor.py:80-94`）。
-调用侧（`main.py:855-866`）只判断 `result["success"]`，不 try 业务逻辑，只兜住执行器自身的意外。
-
-### F. 资源清理：允许裸 `except:`（`rcon_client.py:51/162/175`、`log_client.py:145`、`log_server.py:126/244/272`）
+### E. 资源清理：允许裸 `except:`（`rcon_client.py:51/162/175`、`log_client.py:145`、`log_server.py:126/244/272`）
 
 ```python
 try:
@@ -125,25 +113,24 @@ except:
 | 场景 | 格式 | 例子 |
 |---|---|---|
 | tools 层失败 | `错误: <中文原因>，可选值：...` | `错误: 无效的天气类型 'snow'，可选值：clear、rain、thunder` |
-| 权限不足 | `权限不足：用户 <id> 不在管理员列表中` | `main.py:504-506` |
+| 权限不足 | `权限不足：用户 <id> 不在管理员列表中` | `main.py:482-484` |
 | 危险命令被禁用 | `错误: 命令 '<cmd>' 是危险命令，已被禁用。` | `tools/server_tools.py:210` |
 | 处理成功 | `<做了什么>: <RCON 原始响应>` | `给予 Steve 5个 minecraft:diamond: Given ...` |
-| 脚本 | `✓ ...` / `✗ ...` | `main.py:860-866` |
-| 功能未启用 | `❌ 未启用统一上下文功能(enable_unified_context)...` | `main.py:916-921` |
+| 功能未启用 | `❌ 未启用统一上下文功能(enable_unified_context)...` | `main.py` `tool_send_to_qq_group` |
 
 ---
 
 ## Common Mistakes
 
-- **在 `tool_*` 里 raise。** 模型拿到的是框架异常而不是可读原因；现有 29 个工具（`grep -c 'async def tool_'`）无一例外都是返回字符串。
+- **在 `tool_*` 里 raise。** 模型拿到的是框架异常而不是可读原因；现有 12 个工具（`grep -c 'async def tool_'`）无一例外都是返回字符串。
 - **对 `execute_async` 的结果做 `if not result:` 判断。** 成功无输出时返回固定文案（真值），失败时是
   `错误:` 前缀；用前缀判断，别用真假值。
 - **给整个 LLM 工具再包一层 try/except 兜底。** 现有代码不这样做（靠 execute_async 不抛），重复兜底只会
   丢堆栈、把可定位的 bug 变成"未知错误"。
-- **忘记权限检查。** 新工具默认必须 `_check_permission`；免检只有 5 个只读工具：
-  `list_players`、`whitelist_list`、`banlist`、`list_script_tools`、`search_mc_items`（物品知识库查询）。
+- **忘记权限检查。** 新工具默认必须 `_check_permission`；免检只有 3 个只读工具：
+  `list_players`、`search_mc_items`、`search_mc_commands`（物品/命令知识库查询）。
   知识库的 `mc_kb_rebuild` / `mc_kb_status` 是管理员指令，同样走 `_check_permission`。
-- **依赖 `is_admin()` 的返回类型。** `main.py:468-490` 声明 `-> bool`，但非管理员路径走完分支隐式返回
+- **依赖 `is_admin()` 的返回类型。** `main.py:447-470` 声明 `-> bool`，但非管理员路径走完分支隐式返回
   `None`；`if not self.is_admin(...)` 靠假值侥幸成立。新代码不要依赖它返回严格 bool（修的时候补
   `return False`，见 quality-guidelines 已知债务）。
 - **把异常信息原样丢给 LLM。** 现有做法是翻译成中文操作建议（"请检查服务器是否启动且RCON已启用"），

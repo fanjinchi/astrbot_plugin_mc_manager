@@ -18,10 +18,10 @@
 
 ## Forbidden Patterns
 
-- **新增 `@filter.llm_tool` 却不做权限检查。** 只读查询是唯一例外（4 个，见 error-handling）。
-- **在 `tools/*.py` 里 import astrbot / 打日志 / print。** 这一层必须能被 `ScriptExecutor` 无框架依赖地调用。
+- **新增 `@filter.llm_tool` 却不做权限检查。** 只读查询是唯一例外（3 个，见 error-handling）。
+- **在 `tools/*.py` 里 import astrbot / 打日志 / print。** 这一层保持无框架依赖，便于独立测试与复用。
 - **在 `main.py` 里直接拼 MC 命令发 RCON**，实现应下沉到 `tools/`。唯一现存例外是纯 UI 的
-  `_send_single_mc_message`（`main.py:449-466`），新增代码不要效仿。
+  `_send_single_mc_message`（`main.py:428-445`），新增代码不要效仿。
 - **依赖 `self.is_admin()` 的返回值类型**（隐式返回 `None`，见"已知债务"）。
 - **用裸 `except:` 包业务逻辑**；只允许用于 `close()`/`wait_closed()` 这类清理。
 - **绕过 `enable_dangerous_commands` 开关**把 `stop`/`ban-ip` 之类命令暴露给 LLM。
@@ -76,8 +76,8 @@ async def give_item(player: str, item: str, count: int = 1) -> str:
     return f"给予 {player} {count}个 {item}: {result}"
 ```
 
-同样的 docstring 格式（因为 `ScriptExecutor` 把它们当脚本文档展示，`list_script_tools` 取第一行）；
-参数归一化 + 边界钳制在发命令前做；返回"做了什么 + RCON 原始响应"。
+同样的 docstring 格式（AstrBot 据 docstring 生成 LLM 工具 schema 与参数说明，`Args` 必须
+`name(type): 说明`）；参数归一化 + 边界钳制在发命令前做；返回"做了什么 + RCON 原始响应"。
 
 资源 ID 归一化统一用 `tools/id_utils.py` 的 `normalize_mc_id()`：**只在没有命名空间分隔符时补
 `minecraft:`**，`thermal:tin_ingot` 这类模组完整 ID 必须原样通过。不要再写
@@ -86,8 +86,8 @@ async def give_item(player: str, item: str, count: int = 1) -> str:
 ### 3. 权限
 
 `_check_permission` 先行，返回 `(bool, 错误文案)`。免检只读工具必须能在 `grep -n "无需权限"` 里查到，
-新增免检项要在这里列名。当前 5 个：`list_players`、`whitelist_list`、`banlist`、`list_script_tools`、
-`search_mc_items`（后两个是知识库/脚本文档查询）。
+新增免检项要在这里列名。当前 3 个：`list_players`、`search_mc_items`、`search_mc_commands`
+（物品/命令知识库查询）。whitelist/banlist 属管理功能（游戏内 3 级权限），查询也走 `execute_command`。
 
 `@filter.command` 指令默认也要权限检查（知识库的 `mc_kb_rebuild` / `mc_kb_status` 都是管理员指令）。
 
@@ -98,7 +98,7 @@ async def give_item(player: str, item: str, count: int = 1) -> str:
 
 ### 5. 命令拼接与转义
 
-`tellraw`/`title` 走 JSON 文本，双引号转义（`tools/server_tools.py:82-83`、`main.py:458` 的
+`tellraw` 等 JSON 文本命令要做双引号转义（`tools/server_tools.py:67-68`、`main.py:437` 的
 `replace('\\', '\\\\').replace('"', '\\"')`）。新增拼 JSON 的命令必须复用同样的转义；不拼接文件路径、
 不拼 shell。
 
@@ -127,12 +127,12 @@ async def give_item(player: str, item: str, count: int = 1) -> str:
 
 1. **必做：编译检查**
    ```bash
-   python3 -m compileall -q main.py rcon_client.py log_client.py log_server.py script_executor.py tools/
+   python3 -m compileall -q main.py rcon_client.py log_client.py log_server.py tools/ kb/
    ```
 2. **改了导入/装配：导入冒烟**。确认 `python3 -c "import ast; ast.parse(open('main.py').read())"` 之外，
-   重点核对 `_inject_rcon()` / `_register_script_tools()` 里有没有漏注册或写错名字。
-3. **改了 RCON 行为：真机验证**。装到 AstrBot，`/test_connection`（`main.py:942`）看 RCON；`/test_log`
-   （`:961`）看日志链路；再让 LLM 实际调一次改动的工具，看游戏内效果。
+   重点核对 `_inject_rcon()` 里有没有漏注入或写错模块名。
+3. **改了 RCON 行为：真机验证**。装到 AstrBot，`/test_connection`（`main.py:674`）看 RCON；`/test_log`
+   （`:693`）看日志链路；再让 LLM 实际调一次改动的工具，看游戏内效果。
 4. **改了 `log_server.py`**：`python3 log_server.py <latest.log>` 单独跑，确认端口与插件配置一致。
 
 不要为了一次改动去造一个测试框架来"证明"正确性；也不要写只覆盖 mock 的测试当作真机验证。
@@ -146,7 +146,6 @@ review 时逐条对：
 - [ ] 编译通过；改动文件无 `SyntaxError`/`NameError` 级别的低级错。
 - [ ] 新工具三处同名一致（装饰器 `name` / `tool_*` / `tools` 函数），`Args` 用 `name(type): 说明` 格式。
 - [ ] 权限路径穷尽：需要权限的会不会被绕过？只读的确实只读？
-- [ ] 是否登记进 `_register_script_tools()` 与 `list_script_tools` 的 `categories`（若该工具应可脚本调用）。
 - [ ] 失败路径返回中文错误串并打日志；有没有把成功误判为失败（`execute_async` 的返回语义）。
 - [ ] 是否破坏 Fabric/Forge/NeoForge 通用性、是否假定某个 MC 版本的命令语法。
 - [ ] 新增资源是否在 `terminate()` 或 `close()` 里清理。
@@ -159,11 +158,11 @@ review 时逐条对：
 
 | 位置 | 现状 | 影响 |
 |---|---|---|
-| `rcon_client.py:104-153` | `get_online_players` / `execute_safe` 调用不存在的 `self.execute()`，全项目无人调用 | 死代码；新代码别参考 |
-| `main.py:468-490` | `is_admin()` 声明 `-> bool`，非管理员分支隐式返回 `None` | 靠假值侥幸工作 |
-| `main.py:222-281` vs `:283-335` | `_send_fake_event` 与 `_send_system_event` 大段重复 | 改 session/UMO 逻辑要改两处 |
+| `rcon_client.py` | `get_online_players` 调用不存在的 `self.execute()`，全项目无人调用 | 死代码；新代码别参考 |
+| `main.py:447-470` | `is_admin()` 声明 `-> bool`，非管理员分支隐式返回 `None` | 靠假值侥幸工作 |
+| `main.py:200-259` vs `:261-313` | `_send_fake_event` 与 `_send_system_event` 大段重复 | 改 session/UMO 逻辑要改两处 |
 | `log_server.py:22` vs `:38` | 模块常量 `SERVER_PORT=25571`，`LogServer.__init__` 默认 / 插件配置默认都是 25576 | 直接 `python log_server.py` 用 25571，与插件默认不一致 |
-| `tools/*.py` | `set_rcon`/`get_rcon` 四份复制 | 新增模块沿用复制，别急着抽象 |
+| `tools/*.py` | `set_rcon`/`get_rcon` 三份复制 | 新增模块沿用复制，别急着抽象 |
 | `log_server.py` | 无 logger，22 处 `print` | 独立脚本的现状，保持一致即可 |
 
 ---
