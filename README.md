@@ -8,6 +8,7 @@
 - 🎮 **全面管理**：支持玩家管理、游戏操作、服务器管理、世界操作等功能
 - 🔒 **权限控制**：支持管理员白名单，确保服务器安全
 - 🌐 **跨平台兼容**：基于RCON协议，支持Fabric、Forge、NeoForge等各种服务端
+- 📚 **物品知识库（可选）**：扫描服务端 mods/ 与整合包 kubejs/，把模组物品的完整ID、中英文名、所属模组建成可搜索的库；LLM 说「黄铜锭」也能查到 `create:brass_ingot` 并直接 give
 
 ## 📦 安装
 
@@ -57,6 +58,11 @@ broadcast-rcon-to-ops=true
 | `enable_unified_context` | 启用MC和QQ群的统一上下文 | `false` |
 | `unified_group_umo` | 统一上下文目标群UMO | `""` |
 | `mc_message_prefix` | MC消息在统一上下文中的前缀 | `"[MC]"` |
+| `mc_server_dir` | MC服务端根目录（含 mods/ 的路径）；留空则物品知识库不可用 | `""` |
+| `mc_version` | MC版本（如 1.20.1）；留空自动从服务端目录探测 | `""` |
+| `mc_client_dir` | 客户端 .minecraft 目录（可选）：离线取原版中文名、精确判断方块能否 give | `""` |
+| `vanilla_zh_download` | 重建时自动下载官方原版 zh_cn.json（按版本、sha1校验、失败回退BMCLAPI） | `true` |
+| `cfpa_auto_download` | 重建时自动下载 CFPA 汉化资源包（GitHub 失败回退 BMCLAPI） | `true` |
 
 配置示例：
 ```json
@@ -73,7 +79,12 @@ broadcast-rcon-to-ops=true
   "bot_nickname": "MC助手",
   "enable_unified_context": false,
   "unified_group_umo": "",
-  "mc_message_prefix": "[MC]"
+  "mc_message_prefix": "[MC]",
+  "mc_server_dir": "/home/mc/server",
+  "mc_version": "",
+  "mc_client_dir": "",
+  "vanilla_zh_download": true,
+  "cfpa_auto_download": true
 }
 ```
 
@@ -222,6 +233,11 @@ Bot: 设置游戏规则 keepInventory = true: Gamerule keepInventory is now set 
 - ✅ 执行Python脚本（execute_script）🔒
 - ✅ 列出可用工具（list_script_tools）🆓
 
+### 📚 物品知识库
+- ✅ 搜索物品/方块/实体（search_mc_items）🆓
+- ✅ 重建知识库（/mc_kb_rebuild）🔒
+- ✅ 查看构建状态与覆盖率（/mc_kb_status）🔒
+
 ### 🔗 统一上下文工具
 - ✅ 发送消息到QQ群（send_to_qq_group）🔒
   - 需要启用统一上下文功能
@@ -247,6 +263,63 @@ Bot: 设置游戏规则 keepInventory = true: Gamerule keepInventory is now set 
 
 
 
+## 📚 物品知识库（可选）
+
+LLM 知道 `minecraft:diamond_sword`，但不知道 278 个模组里哪个物品叫「黄铜锭」、ID 是 `create:brass_ingot`。
+物品知识库离线扫描服务端 `mods/*.jar` 与整合包 `kubejs/`，还原 **完整ID ↔ 中英文名 ↔ 所属模组 ↔ 类型**，
+并合并原版名称与 CFPA 汉化，让玩家说中文俗名也能查到可 `give` 的 ID。
+
+### 使用步骤
+
+1. 在插件配置里填写 `mc_server_dir`（MC 服务端根目录，含 `mods/` 的那个目录）。
+2. 让管理员在聊天里执行 `/mc_kb_rebuild`（第一次会下载原版中文约 1.3 MB、CFPA 汉化包约 2 MB，之后走缓存）。
+3. 之后直接对 LLM 说「给我 10 个黄铜锭」，它会先 `search_mc_items` 再 `give_item`；也可执行 `/mc_kb_status` 查看覆盖率。
+
+### 数据目录
+
+知识库是 **可重建的派生缓存**，删掉重跑 `/mc_kb_rebuild` 即可，不影响服务器：
+
+```
+AstrBot/data/plugin_data/mc_manager/
+├── items.db                  # SQLite：物品/方块/流体/实体对照表
+├── vanilla/zh_cn-1.20.1.json # 原版官方中文（运行时下载 / 服主手动放置）
+├── cfpa/*.zip                # CFPA 汉化包缓存（也可手动放 zip 兜底）
+├── zh_cn_extra.json          # 服主自定义中文名（可选）
+└── runtime_dump/*.jsonl      # KubeJS 运行时权威导出（可选增强）
+```
+
+### 自定义中文名（zh_cn_extra.json）
+
+顶层 JSON 对象，key 支持完整 ID 或语言键形态，value 是中文名（优先级最高，会覆盖自动合并结果）：
+
+```json
+{
+  "create:brass_ingot": "黄铜锭",
+  "item.create.cogwheel": "齿轮"
+}
+```
+
+### 运行时 dump（可选增强，解决「服务端私货/动态注册」物品）
+
+静态扫描看不到运行时动态注册的 ID。装了 KubeJS 的整合包可以：
+
+1. 把 [assets/runtime_dump.js](assets/runtime_dump.js) 复制到 `<mc_server_dir>/kubejs/server_scripts/`，重启服务器或执行 `/reload`；
+2. 进服执行 `/researchdump`——结果以 `##RD##` 前缀写进服务器日志 `logs/latest.log`（几万行，属正常）；
+3. 执行 `python3 assets/extract_runtime_dump.py <mc_server_dir>/logs/latest.log`，
+   生成 `<mc_server_dir>/runtime_dump/{item,block,entity,fluid}.jsonl`；
+4. 再执行 `/mc_kb_rebuild`：运行时的注册表是权威数据，会覆盖静态扫描的名称与"能否 give"判断。
+
+AstrBot 与 MC 不同机时，把 `runtime_dump/` 目录拷到插件数据目录 `data/plugin_data/mc_manager/runtime_dump/` 同样会被识别（同名文件取 mtime 新的）。
+
+### 限制与说明
+
+- **AstrBot 与 MC 服务器不同机时无法离线扫描 jar**（RCON 不提供文件访问）。此时可把 CFPA zip 手动放进数据目录的 `cfpa/`；知识库本身仍需要同机或挂载同一目录。
+- 内置"不同机"替代路径之外的方案不在本插件范围内；`mc_server_dir` 必须能被 AstrBot 进程读到。
+- 原版名称来自本机安装的官方语言文件（Forge 的 `server-*-extra.jar`）或运行时下载，**插件不分发任何 Minecraft 资源**（遵守 Mojang EULA / Usage Guidelines）。
+- 1.20.1 有 33 个原版条目（17 个锻造模板 + 16 个墙旗）官方语言文件里本来就没有名字，库里只能显示 ID，属已知例外。
+- 原版方块「能否 give」在没有客户端目录时用掉落表近似（约 91% 精确 / 99% 召回），查询结果会标注「推测可 give」；配置 `mc_client_dir` 后按客户端模型精确判定。
+- CFPA 汉化包翻译数据来自 [CFPA Minecraft-Mod-Language-Package](https://github.com/CFPAOrg/Minecraft-Mod-Language-Package)，许可 **CC BY-NC-SA 4.0**；插件运行时下载，不随插件分发。
+
 ## 🔐 权限分级说明
 
 插件的所有工具按照危险程度分为不同等级：
@@ -258,6 +331,7 @@ Bot: 设置游戏规则 keepInventory = true: Gamerule keepInventory is now set 
 - `whitelist_list` - 查看白名单
 - `banlist` - 查看封禁列表
 - `list_script_tools` - 查看可用工具列表
+- `search_mc_items` - 搜索物品知识库（物品/方块/实体的 ID 与中英文名）
 
 ### 🔴 需要权限（管理操作）
 所有其他工具都需要管理员权限，包括：
@@ -322,6 +396,17 @@ Bot: 设置游戏规则 keepInventory = true: Gamerule keepInventory is now set 
 3. 查看AstrBot日志获取详细错误信息
 
 ## 📝 更新日志
+
+### v1.3.0
+- ✨ 新增物品知识库（可选）
+  - 离线扫描服务端 mods/ 与整合包 kubejs/，还原模组物品 ID + 中英文名
+  - 新增 `search_mc_items` 只读工具（无需权限），支持中文名/英文名/完整ID 模糊搜索
+  - 新增 `/mc_kb_rebuild`、`/mc_kb_status` 指令
+  - 原版 ID/英文名取自服务端安装，中文按版本运行时下载；合并 CFPA 汉化包（CC BY-NC-SA 4.0）
+  - 支持 `zh_cn_extra.json` 自定义译名与 KubeJS 运行时 dump 增强
+  - 附运行时导出脚本 assets/runtime_dump.js 与日志转换脚本 assets/extract_runtime_dump.py
+- 🐛 修复模组物品/方块/实体无法操作的问题
+  - give / clear / summon / fill 不再强制给 ID 加 `minecraft:` 前缀，`create:brass_ingot` 这类完整 ID 可直接使用（原版短名行为不变）
 
 ### v1.2.0
 - ✨ 新增统一会话上下文功能

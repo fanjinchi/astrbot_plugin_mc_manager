@@ -88,5 +88,35 @@
     "title": "MC消息前缀",
     "description": "MC玩家消息在统一上下文中的前缀标识",
     "default": "[MC]"
+  },
+  "mc_server_dir": {
+    "type": "string",
+    "title": "MC服务器目录",
+    "description": "MC服务器根目录（含mods/的路径），如 /home/mc/server。留空则物品知识库功能不可用",
+    "default": ""
+  },
+  "mc_version": {
+    "type": "string",
+    "title": "MC版本",
+    "description": "服务器MC版本（如 1.20.1），留空自动从服务器目录探测",
+    "default": ""
+  },
+  "mc_client_dir": {
+    "type": "string",
+    "title": "客户端目录（可选）",
+    "description": "客户端 .minecraft 目录（可选，离线取原版中文名、精确判断方块能否give）。留空则原版中文走官方下载或手动放置",
+    "default": ""
+  },
+  "vanilla_zh_download": {
+    "type": "bool",
+    "title": "自动下载原版中文",
+    "description": "重建知识库时是否自动下载官方原版 zh_cn.json（按MC版本，sha1校验，缓存到插件数据目录，失败回退BMCLAPI）",
+    "default": true
+  },
+  "cfpa_auto_download": {
+    "type": "bool",
+    "title": "自动下载CFPA汉化包",
+    "description": "重建知识库时是否自动下载CFPA汉化资源包（需联网，GitHub失败回退BMCLAPI）",
+    "default": true
   }
 }

@@ -213,3 +213,6 @@ __marimo__/
 .dsh/
 .kimi-code/
 .pi/
+
+# AstrBot 以 CWD 初始化时生成的运行目录（插件根目录下）
+/data/

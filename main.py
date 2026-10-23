@@ -13,6 +13,7 @@ from .rcon_client import MinecraftRCON
 from .tools import player_tools, game_tools, server_tools, world_tools
 from .log_client import LogClient
 from .script_executor import ScriptExecutor
+from .kb import KnowledgeBase
 
 
 @register(
@@ -56,6 +57,28 @@ class MCManagerPlugin(Star):
         self.enable_unified_context = self.config.get("enable_unified_context", False)
         self.unified_group_umo = self.config.get("unified_group_umo", "")
         self.mc_message_prefix = self.config.get("mc_message_prefix", "[MC]")
+        
+        # 物品知识库配置（默认值须与 _conf_schema.json 一致）
+        self.mc_server_dir = self.config.get("mc_server_dir", "")
+        self.mc_version = self.config.get("mc_version", "")
+        self.mc_client_dir = self.config.get("mc_client_dir", "")
+        self.vanilla_zh_download = self.config.get("vanilla_zh_download", True)
+        self.cfpa_auto_download = self.config.get("cfpa_auto_download", True)
+        
+        # 物品知识库（mods/ 的派生缓存，数据目录 = AstrBot/data/plugin_data/mc_manager）
+        self.kb = None
+        try:
+            from astrbot.core.star.star_tools import StarTools
+            self.kb = KnowledgeBase(
+                data_dir=StarTools.get_data_dir("mc_manager"),
+                server_dir=self.mc_server_dir,
+                mc_version=self.mc_version,
+                client_dir=self.mc_client_dir,
+                vanilla_zh_download=self.vanilla_zh_download,
+                cfpa_auto_download=self.cfpa_auto_download,
+            )
+        except Exception as e:
+            logger.warning(f"物品知识库初始化失败（不影响其他功能）: {e}")
         
         # 初始化日志客户端（如果启用）
         self.log_client = None
@@ -337,6 +360,7 @@ class MCManagerPlugin(Star):
     
     async def terminate(self):
         """插件禁用/重载时自动调用 - 清理资源"""
+        # 物品知识库按"连接即用即关"实现（store.py），没有需要关闭的长连接
         # 断开日志客户端（停止自动重连）
         if self.log_client:
             await self.log_client.disconnect(stop_reconnect=True)
@@ -597,7 +621,7 @@ class MCManagerPlugin(Star):
         
         Args:
             player(string): 要给予物品的玩家名称
-            item(string): 物品ID，如diamond、iron_sword
+            item(string): 物品ID，如diamond、iron_sword；模组物品用完整ID，如 create:brass_ingot
             count(number): 物品数量，默认1
         """
         has_permission, error_msg = self._check_permission(event)
@@ -649,7 +673,7 @@ class MCManagerPlugin(Star):
         
         Args:
             player(string): 玩家名称
-            item(string): 可选，特定物品ID
+            item(string): 可选，特定物品ID；模组物品用完整ID，如 create:brass_ingot
         """
         has_permission, error_msg = self._check_permission(event)
         if not has_permission:
@@ -810,7 +834,7 @@ class MCManagerPlugin(Star):
         """生成实体
         
         Args:
-            entity(string): 实体类型
+            entity(string): 实体类型，如zombie；模组实体用完整ID，如 iceandfire:fire_dragon
             x(number): X坐标
             y(number): Y坐标
             z(number): Z坐标
@@ -864,6 +888,22 @@ class MCManagerPlugin(Star):
         except Exception as e:
             logger.error(f"执行脚本时出错: {e}")
             return f"✗ 脚本执行异常: {str(e)}"
+    
+    @filter.llm_tool(name="search_mc_items")
+    async def tool_search_mc_items(self, event: AstrMessageEvent, keyword: str, limit: int = 10) -> str:
+        """搜索MC物品/方块/实体知识库（无需权限）
+        
+        在已构建的物品知识库里按中文名、英文名或完整ID模糊搜索，返回可直接使用的完整ID
+        （给物品用 give_item、生成实体用 summon_entity、填方块用 execute_command 的 fill）、
+        中英文名、所属模组和类型。玩家只说物品俗名/中文名、或你不确定模组ID时先用它查。
+        
+        Args:
+            keyword(string): 搜索关键词，如「黄铜锭」「brass_ingot」「diamond_sword」
+            limit(number): 最多返回条数，默认10
+        """
+        if self.kb is None:
+            return "物品知识库不可用（插件数据目录初始化失败），请查看日志"
+        return self.kb.search(keyword, limit)
     
     @filter.llm_tool(name="list_script_tools")
     async def tool_list_script_tools(self, event: AstrMessageEvent) -> str:
@@ -975,3 +1015,41 @@ class MCManagerPlugin(Star):
             yield event.plain_result(log_content)
         except Exception as e:
             yield event.plain_result(f"错误: {e}")
+    
+    @filter.command("mc_kb_rebuild")
+    async def cmd_kb_rebuild(self, event: AstrMessageEvent):
+        """重建物品知识库（扫描服务端 mods/ 与 kubejs/，合并原版与 CFPA 汉化）"""
+        has_permission, error_msg = self._check_permission(event)
+        if not has_permission:
+            yield event.plain_result(error_msg)
+            return
+        
+        if self.kb is None:
+            yield event.plain_result("物品知识库不可用：插件数据目录初始化失败，请查看 AstrBot 日志")
+            return
+        
+        if not self.kb.enabled:
+            yield event.plain_result("未配置 mc_server_dir（MC 服务器根目录），无法扫描 mods/。请先在插件配置里填写后重试")
+            return
+        
+        yield event.plain_result("⏳ 正在重建物品知识库（扫描 mods/ 通常需要几秒到几十秒，请稍候）...")
+        
+        def _log(message):
+            logger.info(f"[MC知识库] {message}")
+        
+        result = await asyncio.to_thread(self.kb.rebuild, _log)
+        yield event.plain_result(result)
+    
+    @filter.command("mc_kb_status")
+    async def cmd_kb_status(self, event: AstrMessageEvent):
+        """查看物品知识库构建状态与覆盖率"""
+        has_permission, error_msg = self._check_permission(event)
+        if not has_permission:
+            yield event.plain_result(error_msg)
+            return
+        
+        if self.kb is None:
+            yield event.plain_result("物品知识库不可用：插件数据目录初始化失败，请查看 AstrBot 日志")
+            return
+        
+        yield event.plain_result(self.kb.status())
