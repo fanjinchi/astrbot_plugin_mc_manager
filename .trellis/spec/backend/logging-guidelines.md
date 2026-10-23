@@ -14,11 +14,9 @@ from astrbot.api import logger
 ```
 （`main.py:9`、`rcon_client.py:10`、`log_client.py:12`）
 
-两个例外，都是在"框架外"的代码：
+一个例外，在"框架外"的代码：
 
-- `log_server.py` 是独立运行在 MC 服务器那台机器上的脚本，**不使用** astrbot logger，用
-  `print("[INFO] ...")` / `[ERROR]` / `[WARNING]`（22 处）。
-- `tools/*.py` **完全不产生日志**（0 处 logger/print）。信息随返回字符串回到 LLM/用户；排障看调用侧或
+- `tools/*.py` 与 `text_outbound.py` **完全不产生日志**（0 处 logger/print）。信息随返回字符串回到 LLM/用户；排障看调用侧或
   RCON 层那条命令日志。新增 tools 函数请保持这一点。
 
 当前分布：`info` 34 处、`error` 28 处、`warning` 5 处、`debug` 3 处。

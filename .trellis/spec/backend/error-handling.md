@@ -61,7 +61,11 @@ for attempt in range(max_retries):
 ```
 
 要点：只对**连接类**异常重试；其他异常立即返回；`execute_async` 的返回类型永远是 `str`，调用方不需要包
-`try`。成功且无输出时返回"命令执行成功（无返回信息）"，所以**不要用真假值判断成败**，要看 `错误:` 前缀。
+`try`。
+
+注意：aiomcrcon 的 `send_cmd` 实际返回 `tuple[str, int]`（响应文本 + 请求 ID），`execute_async` 成功分支
+必须用 `isinstance(response, tuple)` 解包取 `[0]`（rcon_client.py:73-77）。2026-10 之前没解包，元组被
+f-string 插值成 `"('...', 5)"` 脏文本；任何对返回值调 str 方法（如 `startswith`）的代码都会直接炸。成功且无输出时返回"命令执行成功（无返回信息）"，所以**不要用真假值判断成败**，要看 `错误:` 前缀。
 
 ### B. 参数校验失败：直接返回错误串，不发命令（`tools/world_tools.py:58-59`）
 

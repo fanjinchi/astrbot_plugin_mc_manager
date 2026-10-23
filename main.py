@@ -4,6 +4,8 @@ AstrBot MC服务器管理插件
 """
 
 import asyncio
+import os
+import time
 from astrbot.api.star import Context, Star, register
 from astrbot.api.event import filter, AstrMessageEvent, MessageEventResult
 from astrbot.api import AstrBotConfig, logger
@@ -11,7 +13,8 @@ from astrbot.core.provider.entities import LLMResponse
 
 from .rcon_client import MinecraftRCON
 from .tools import game_tools, server_tools, world_tools
-from .log_client import LogClient
+from .log_watcher import LogWatcher
+from .text_outbound import build_tellraw_commands
 from .kb import KnowledgeBase
 from .kb import commands as cmd_kb
 
@@ -54,9 +57,14 @@ class MCManagerPlugin(Star):
         self.bot_nickname = self.config.get("bot_nickname", "Bot")
         
         # 加载统一上下文配置
+        # unified_group_umo 同时作为「绑定群」：mc绑定 命令会改写并保存它
         self.enable_unified_context = self.config.get("enable_unified_context", False)
         self.unified_group_umo = self.config.get("unified_group_umo", "")
         self.mc_message_prefix = self.config.get("mc_message_prefix", "[MC]")
+        # 系统事件（进/退服、死亡、成就）是否也注入 LLM 会话上下文；转发到绑定群不受此开关控制
+        self.enable_system_event_context = self.config.get("enable_system_event_context", False)
+        # 游戏内聊天转发到绑定群的前缀（默认 mc喊话，留空=全部转发）；系统事件转发不受此前缀控制
+        self.mc_bridge_prefix = self.config.get("mc_bridge_prefix", "mc喊话")
         
         # 物品知识库配置（默认值须与 _conf_schema.json 一致）
         self.mc_server_dir = self.config.get("mc_server_dir", "")
@@ -80,30 +88,21 @@ class MCManagerPlugin(Star):
         except Exception as e:
             logger.warning(f"物品知识库初始化失败（不影响其他功能）: {e}")
         
-        # 初始化日志客户端（如果启用）
-        self.log_client = None
-        enable_log = self.config.get("enable_log_monitor", False)
-        if enable_log:
-            log_host = self.config.get("log_server_host", "127.0.0.1")
-            log_port = self.config.get("log_server_port", 25576)
-            reconnect_interval = self.config.get("log_reconnect_interval", 10)
-            max_reconnect_attempts = self.config.get("log_max_reconnect_attempts", 0)
-            
-            # 所有MC消息都会提交到AstrBot，由框架的wake_prefix控制是否调用LLM
-            self.log_client = LogClient(
-                log_host,
-                log_port,
-                reconnect_interval=reconnect_interval,
-                max_reconnect_attempts=max_reconnect_attempts
-            )
-            self.log_client.set_chat_callback(self._on_player_chat)
-            self.log_client.set_fake_event_handler(self._send_fake_event)
-            self.log_client.set_disconnect_callback(self._on_log_disconnect)
-            self.log_client.set_reconnect_callback(self._on_log_reconnect)
-            self.log_client.set_player_join_callback(self._on_player_join)
-            self.log_client.set_player_leave_callback(self._on_player_leave)
-            self.log_client.set_player_advancement_callback(self._on_player_advancement)
-            self.log_client.set_player_death_callback(self._on_player_death)
+        # 初始化日志监听器（同机直连 latest.log，无需独立脚本，无需开关：
+        # 配了 mc_server_dir 就自动工作；服务器启动/重启由 watcher 自动感知）
+        self.log_watcher = None
+        self._watcher_log_path = ""
+        if self.mc_server_dir:
+            self._watcher_log_path = os.path.join(self.mc_server_dir, "logs", "latest.log")
+            self.log_watcher = LogWatcher(self._watcher_log_path)
+            self.log_watcher.set_chat_callback(self._on_mc_chat)
+            self.log_watcher.set_player_join_callback(self._on_player_join)
+            self.log_watcher.set_player_leave_callback(self._on_player_leave)
+            self.log_watcher.set_player_advancement_callback(self._on_player_advancement)
+            self.log_watcher.set_player_death_callback(self._on_player_death)
+        
+        # mc喊话 的按人冷却（发送者ID -> 上次发送的 monotonic 时间）
+        self._shout_cooldown: dict[str, float] = {}
         
         # 注入RCON客户端到所有工具模块
         self._inject_rcon()
@@ -111,11 +110,11 @@ class MCManagerPlugin(Star):
         logger.info(f"MC Manager插件已加载，RCON: {self.config.get('rcon_host')}:{self.config.get('rcon_port')}")
     
     async def initialize(self):
-        """插件激活时自动调用 - 启动长连接任务"""
-        # 启动日志客户端（包含自动重连功能）
-        if self.log_client:
-            asyncio.create_task(self.log_client.start_listening())
-            logger.info("日志监控已启动（支持自动重连）")
+        """插件激活时自动调用 - 启动日志监听（检测到服务器启动后自动接管）"""
+        if self.log_watcher:
+            await self.log_watcher.start()
+        else:
+            logger.warning("未配置 mc_server_dir，MC聊天监听与物品知识库不可用")
     
     def _inject_rcon(self):
         """将RCON客户端注入到所有工具模块"""
@@ -124,24 +123,62 @@ class MCManagerPlugin(Star):
         server_tools.set_dangerous_commands_enabled(self.enable_dangerous)
         world_tools.set_rcon(self.rcon)
     
-    async def _on_player_chat(self, player: str, message: str, time: str):
+    async def _on_mc_chat(self, player: str, message: str):
         """
-        处理玩家聊天消息的回调函数
+        玩家聊天回调：按前缀转发到绑定群 + 注入 AstrBot 事件管线（LLM 游戏内响应依赖）
         
         Args:
             player: 玩家名称
             message: 聊天消息内容
-            time: 消息时间
         """
-        pass
+        # MC→QQ 是显式传话：只有以前缀开头的游戏内消息才转发进群（对称于QQ侧的 mc喊话 命令）
+        forward_text = message
+        if self.mc_bridge_prefix:
+            if not message.startswith(self.mc_bridge_prefix):
+                forward_text = ""
+            else:
+                forward_text = message[len(self.mc_bridge_prefix):].strip()
+        if forward_text:
+            await self._forward_to_bound_group(f"<{player}> {forward_text}")
+        # 伪造事件提交进事件管线：由框架 wake_prefix 决定是否触发 LLM（不受转发前缀影响）
+        await self._send_fake_event(player, message)
     
-    async def _on_log_disconnect(self):
-        """日志服务器断连回调"""
-        logger.warning("与日志服务器的连接已断开")
+    def _bound_platform_id(self) -> str:
+        """取伪造事件要挂到的平台实例 id（UMO 格式: 平台ID:消息类型:会话ID）。
+
+        优先绑定群的平台；无绑定时从当前已加载的平台实例里挑第一个
+        （纯 QQ官方机器人 部署下硬编码 aiocqhttp 会让 create_event 找不到平台），
+        一个平台都没有时回退 aiocqhttp 字符串（会被上层 try/except 吞掉并记日志）。
+        """
+        parts = self.unified_group_umo.split(":", 2) if self.unified_group_umo else []
+        if len(parts) == 3 and parts[0]:
+            return parts[0]
+        try:
+            insts = self.context.platform_manager.platform_insts
+            if insts:
+                return insts[0].meta().id
+        except Exception:
+            pass
+        return "aiocqhttp"
     
-    async def _on_log_reconnect(self):
-        """日志服务器重连成功回调"""
-        logger.info("已重新连接到日志服务器")
+    async def _forward_to_bound_group(self, text: str):
+        """
+        把 MC 侧消息推送到绑定群（平台无关，走 context.send_message 按 UMO 路由）
+        
+        Args:
+            text: 消息内容（会自动加上 mc_message_prefix 前缀）
+        """
+        if not self.unified_group_umo:
+            return
+        try:
+            from astrbot.api.event import MessageChain
+            chain = MessageChain().message(f"{self.mc_message_prefix} {text}")
+            ok = await self.context.send_message(self.unified_group_umo, chain)
+            if not ok:
+                logger.warning("转发MC消息到绑定群失败：未找到匹配的消息平台（绑定群所在平台可能未加载）")
+        except Exception as e:
+            # QQ官方机器人主动推送有配额/群发言前提等限制，失败仅记日志不打断监听
+            logger.error(f"转发MC消息到绑定群失败: {e}")
     
     async def _on_player_join(self, player: str):
         """
@@ -151,10 +188,9 @@ class MCManagerPlugin(Star):
             player: 玩家名称
         """
         logger.info(f"[MC事件] 玩家 {player} 加入了游戏")
-        
-        # 伪造事件提交到AstrBot，让LLM感知到登入事件
-        event_message = f"[系统消息] {player} 加入了游戏"
-        await self._send_system_event(player, event_message)
+        await self._forward_to_bound_group(f"玩家 {player} 加入了游戏")
+        if self.enable_system_event_context:
+            await self._send_system_event(player, f"[系统消息] {player} 加入了游戏")
     
     async def _on_player_leave(self, player: str):
         """
@@ -164,10 +200,9 @@ class MCManagerPlugin(Star):
             player: 玩家名称
         """
         logger.info(f"[MC事件] 玩家 {player} 离开了游戏")
-        
-        # 伪造事件提交到AstrBot
-        event_message = f"[系统消息] {player} 离开了游戏"
-        await self._send_system_event(player, event_message)
+        await self._forward_to_bound_group(f"玩家 {player} 离开了游戏")
+        if self.enable_system_event_context:
+            await self._send_system_event(player, f"[系统消息] {player} 离开了游戏")
     
     async def _on_player_advancement(self, player: str, advancement: str):
         """
@@ -178,10 +213,9 @@ class MCManagerPlugin(Star):
             advancement: 成就名称
         """
         logger.info(f"[MC事件] 玩家 {player} 达成了成就 [{advancement}]")
-        
-        # 伪造事件提交到AstrBot
-        event_message = f"[系统消息] {player} 达成了成就 [{advancement}]"
-        await self._send_system_event(player, event_message)
+        await self._forward_to_bound_group(f"玩家 {player} 达成了成就 [{advancement}]")
+        if self.enable_system_event_context:
+            await self._send_system_event(player, f"[系统消息] {player} 达成了成就 [{advancement}]")
     
     async def _on_player_death(self, player: str, reason: str):
         """
@@ -192,10 +226,9 @@ class MCManagerPlugin(Star):
             reason: 死因描述
         """
         logger.info(f"[MC事件] 玩家死亡: {reason}")
-        
-        # 伪造事件提交到AstrBot
-        event_message = f"[系统消息] {reason}"
-        await self._send_system_event(player, event_message)
+        await self._forward_to_bound_group(reason)
+        if self.enable_system_event_context:
+            await self._send_system_event(player, f"[系统消息] {reason}")
     
     async def _send_fake_event(self, player: str, message: str):
         """
@@ -247,9 +280,11 @@ class MCManagerPlugin(Star):
             # 提交事件到AstrBot
             # - is_wake=False 让框架根据唤醒词配置决定是否调用LLM
             # - LTM仍然会记录所有消息作为上下文
+            # - platform 取绑定群的平台实例 id，保证非 onebot 平台（如QQ官方机器人）下
+            #   统一上下文会话落在正确的适配器上
             await StarTools.create_event(
                 abm=new_message,
-                platform="aiocqhttp",
+                platform=self._bound_platform_id(),
                 is_wake=False
             )
             
@@ -303,7 +338,7 @@ class MCManagerPlugin(Star):
             # 提交事件到AstrBot（不触发唤醒，但会记录到LTM）
             await StarTools.create_event(
                 abm=new_message,
-                platform="aiocqhttp",
+                platform=self._bound_platform_id(),
                 is_wake=False
             )
             
@@ -316,10 +351,11 @@ class MCManagerPlugin(Star):
     async def terminate(self):
         """插件禁用/重载时自动调用 - 清理资源"""
         # 物品知识库按"连接即用即关"实现（store.py），没有需要关闭的长连接
-        # 断开日志客户端（停止自动重连）
-        if self.log_client:
-            await self.log_client.disconnect(stop_reconnect=True)
-            logger.info("日志监控已停止")
+        # 停止日志监听（含 daemon IO 线程与事件循环任务）
+        if self.log_watcher:
+            await self.log_watcher.stop()
+        # 关闭 RCON 长连接（旧版漏关，靠 __del__ 兜底）
+        await self.rcon.close()
     
     @filter.on_llm_response()
     async def on_llm_response(self, event: AstrMessageEvent, response: LLMResponse):
@@ -382,67 +418,22 @@ class MCManagerPlugin(Star):
     
     async def _send_to_mc_chat(self, message: str):
         """
-        将消息发送到MC服务器聊天框
+        将消息发送到MC服务器聊天框（按 RCON 单包字节预算切段，防止中文长文本被静默拔线）
         
         Args:
             message: 要发送的消息内容
         """
-        try:
-            # MC聊天框有长度限制，需要分段发送
-            max_length = 200  # 每段最大长度
-            
-            # 处理换行符，分段发送
-            lines = message.split('\n')
-            current_chunk = ""
-            
-            for line in lines:
-                # 如果当前行太长，需要进一步拆分
-                if len(line) > max_length:
-                    # 先发送当前累积的内容
-                    if current_chunk:
-                        await self._send_single_mc_message(current_chunk)
-                        current_chunk = ""
-                    
-                    # 拆分长行
-                    for i in range(0, len(line), max_length):
-                        chunk = line[i:i + max_length]
-                        await self._send_single_mc_message(chunk)
-                else:
-                    # 检查添加这行后是否超长
-                    test_chunk = current_chunk + ('\n' if current_chunk else '') + line
-                    if len(test_chunk) > max_length:
-                        # 先发送当前累积的内容
-                        if current_chunk:
-                            await self._send_single_mc_message(current_chunk)
-                        current_chunk = line
-                    else:
-                        current_chunk = test_chunk
-            
-            # 发送剩余内容
-            if current_chunk:
-                await self._send_single_mc_message(current_chunk)
-                
-        except Exception as e:
-            logger.error(f"发送消息到MC聊天框失败: {e}")
-    
-    async def _send_single_mc_message(self, message: str):
-        """
-        发送单条消息到MC聊天框
-        
-        Args:
-            message: 消息内容
-        """
-        try:
-            # 转义JSON特殊字符
-            escaped_message = message.replace('\\', '\\\\').replace('"', '\\"').replace('\n', '\\n')
-            
-            # 使用tellraw命令发送消息给所有玩家
-            json_text = f'{{"text":"[{self.bot_nickname}] {escaped_message}", "color":"aqua"}}'
-            command = f'tellraw @a {json_text}'
-            
-            result = await self.rcon.execute_async(command)
-        except Exception as e:
-            logger.error(f"发送单条消息到MC失败: {e}")
+        prefix = f"[{self.bot_nickname}] "
+        for command in build_tellraw_commands(message, prefix=prefix, color="aqua"):
+            try:
+                result = await self.rcon.execute_async(command)
+                # execute_async 永远不抛，失败返回 "错误:" 前缀字符串
+                if result.startswith("错误:"):
+                    logger.error(f"发送消息到MC聊天框失败: {result}")
+                    break
+            except Exception as e:
+                logger.error(f"发送消息到MC聊天框失败: {e}")
+                break
     
     def is_admin(self, user_id: str) -> bool:
         """
@@ -643,13 +634,9 @@ class MCManagerPlugin(Star):
         if not has_permission:
             return error_msg
         
-        # 检查是否启用了统一上下文
-        if not self.enable_unified_context:
-            return "❌ 未启用统一上下文功能(enable_unified_context)，无法发送到QQ群"
-        
-        # 检查是否配置了UMO
+        # 检查是否已绑定QQ群
         if not self.unified_group_umo:
-            return "❌ 未配置统一上下文UMO(unified_group_umo)，无法发送到QQ群"
+            return "❌ 未绑定QQ群（管理员在目标群发送 mc绑定 即可绑定），无法发送"
         
         try:
             from astrbot.api.event import MessageChain
@@ -691,21 +678,106 @@ class MCManagerPlugin(Star):
 
     @filter.command("test_log")
     async def cmd_test_log_connection(self, event: AstrMessageEvent):
-        """测试与日志服务器的连接并读取最新一条日志"""
+        """查看本地日志监听状态（latest.log 直连）"""
         has_permission, error_msg = self._check_permission(event)
         if not has_permission:
             yield event.plain_result(error_msg)
             return
         
-        if not self.log_client:
-            yield event.plain_result("日志监控功能未启用")
+        if not self.log_watcher:
+            yield event.plain_result("日志监听不可用：未配置 mc_server_dir（MC 服务器根目录）")
             return
         
+        yield event.plain_result(self.log_watcher.status_text())
+
+    @filter.command("mc绑定")
+    async def cmd_bind_group(self, event: AstrMessageEvent):
+        """把当前QQ群绑定为MC消息转发目标（管理员）"""
+        has_permission, error_msg = self._check_permission(event)
+        if not has_permission:
+            yield event.plain_result(error_msg)
+            return
+        
+        if not event.get_group_id():
+            yield event.plain_result("❌ 请在目标QQ群里使用本命令")
+            return
+        
+        # 自动捕获当前会话 UMO，免手抄，且天然适配任意平台（onebot/QQ官方机器人等）
+        umo = event.unified_msg_origin
+        self.config["unified_group_umo"] = umo
+        self.unified_group_umo = umo
         try:
-            success, log_content = await self.log_client.test_connection()
-            yield event.plain_result(log_content)
+            self.config.save_config()
         except Exception as e:
-            yield event.plain_result(f"错误: {e}")
+            logger.error(f"保存群绑定配置失败: {e}")
+            yield event.plain_result(f"❌ 绑定已生效但保存配置失败（重启后失效）: {e}")
+            return
+        
+        yield event.plain_result(
+            f"✓ 已绑定本群为MC消息转发目标（平台: {event.get_platform_name()}）\n"
+            "游戏内聊天与系统事件将推送到本群；发送 mc解绑 可解除。"
+        )
+
+    @filter.command("mc解绑")
+    async def cmd_unbind_group(self, event: AstrMessageEvent):
+        """解除MC消息转发群的绑定（管理员）"""
+        has_permission, error_msg = self._check_permission(event)
+        if not has_permission:
+            yield event.plain_result(error_msg)
+            return
+        
+        if not self.unified_group_umo:
+            yield event.plain_result("当前没有绑定任何群")
+            return
+        
+        self.config["unified_group_umo"] = ""
+        self.unified_group_umo = ""
+        try:
+            self.config.save_config()
+        except Exception as e:
+            logger.error(f"保存群绑定配置失败: {e}")
+            yield event.plain_result(f"❌ 解绑已生效但保存配置失败（重启后恢复）: {e}")
+            return
+        
+        yield event.plain_result("✓ 已解除群绑定，MC消息不再转发到QQ群")
+
+    @filter.command("mc喊话")
+    async def cmd_shout_to_mc(self, event: AstrMessageEvent):
+        """把消息发送到MC游戏内聊天（限绑定群，同一人 5 秒冷却）"""
+        # 喊话是聊天桥的一部分，只在绑定群可用，避免 bot 所在任意群都能往公屏说话
+        if not self.unified_group_umo:
+            yield event.plain_result("❌ 未绑定MC互通群，请管理员先在目标群发送 mc绑定")
+            return
+        if event.unified_msg_origin != self.unified_group_umo:
+            yield event.plain_result("❌ 请在已绑定的MC互通群里使用本命令")
+            return
+        
+        # 取命令后的完整文本；message_str 是原始文本，可能带唤醒前缀，用 find 定位命令本体
+        raw = event.message_str.strip()
+        idx = raw.find("mc喊话")
+        message = raw[idx + len("mc喊话"):].strip() if idx >= 0 else ""
+        
+        if not message:
+            yield event.plain_result("用法: mc喊话 <要说的话>")
+            return
+        
+        sender_id = event.get_sender_id()
+        now = time.monotonic()
+        last = self._shout_cooldown.get(sender_id, 0)
+        if now - last < 5:
+            yield event.plain_result("说话太快了，请 5 秒后再试")
+            return
+        
+        sender_name = event.get_sender_name() or sender_id
+        prefix = f"[群聊] {sender_name}: "
+        for command in build_tellraw_commands(message, prefix=prefix, color="yellow"):
+            result = await self.rcon.execute_async(command)
+            if result.startswith("错误:"):
+                yield event.plain_result(f"❌ 发送到MC失败：{result}")
+                return
+        
+        self._shout_cooldown[sender_id] = now
+        yield event.plain_result("✓ 已发送到MC")
     
     @filter.command("mc_kb_rebuild")
     async def cmd_kb_rebuild(self, event: AstrMessageEvent):

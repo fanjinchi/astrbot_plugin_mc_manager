@@ -29,40 +29,10 @@
     "description": "是否启用stop等危险命令",
     "default": false
   },
-  "enable_log_monitor": {
-    "type": "bool",
-    "title": "启用日志监控",
-    "description": "是否启用Minecraft服务器日志实时监控功能",
-    "default": false
-  },
-  "log_server_host": {
-    "type": "string",
-    "title": "日志服务器地址",
-    "description": "日志服务器的IP地址（运行log_server.py的机器）",
-    "default": "127.0.0.1"
-  },
-  "log_server_port": {
-    "type": "int",
-    "title": "日志服务器端口",
-    "description": "日志服务器监听的端口号",
-    "default": 25576
-  },
-  "log_reconnect_interval": {
-    "type": "int",
-    "title": "日志服务器重连间隔",
-    "description": "与日志服务器断开连接后，自动重连的时间间隔（秒），设为0禁用自动重连",
-    "default": 10
-  },
-  "log_max_reconnect_attempts": {
-    "type": "int",
-    "title": "最大重连次数",
-    "description": "自动重连的最大尝试次数，设为0表示无限重试",
-    "default": 0
-  },
   "enable_chat_response": {
     "type": "bool",
     "title": "启用聊天响应",
-    "description": "是否将LLM的响应发送回MC聊天框（需要启用日志监控）。注意：所有MC消息会提交到AstrBot框架，由AstrBot的wake_prefix配置控制是否调用LLM",
+    "description": "是否将LLM的响应发送回MC聊天框（需要配置 mc_server_dir 以启用日志监听）。注意：所有MC消息会提交到AstrBot框架，由AstrBot的wake_prefix配置控制是否调用LLM",
     "default": true
   },
   "bot_nickname": {
@@ -74,25 +44,37 @@
   "enable_unified_context": {
     "type": "bool",
     "title": "启用统一上下文",
-    "description": "是否启用MC和QQ群的统一上下文功能（需同时配置unified_group_umo）",
+    "description": "是否让MC聊天进入绑定群的LLM会话上下文（需先绑定群，可用 mc绑定 命令）",
+    "default": false
+  },
+  "enable_system_event_context": {
+    "type": "bool",
+    "title": "系统事件注入上下文",
+    "description": "是否把进服/退服/死亡/成就等系统事件也注入LLM会话上下文（转发到绑定群不受此开关控制）",
     "default": false
   },
   "unified_group_umo": {
     "type": "string",
-    "title": "统一上下文UMO",
-    "description": "用于send_to_qq_group工具发送消息的完整UMO字符串。格式：平台ID:GroupMessage:群号，示例：aiocqhttp_default:GroupMessage:123456789",
+    "title": "绑定群UMO",
+    "description": "MC消息转发目标群的UMO字符串（格式：平台ID:GroupMessage:群号）。无需手填：管理员在目标群发送 mc绑定 命令即可自动设置",
     "default": ""
+  },
+  "mc_bridge_prefix": {
+    "type": "string",
+    "title": "游戏内转发前缀",
+    "description": "游戏内聊天以此前缀开头才会转发到绑定QQ群（默认 mc喊话，与QQ侧的 mc喊话 命令对应）；留空表示全部转发",
+    "default": "mc喊话"
   },
   "mc_message_prefix": {
     "type": "string",
     "title": "MC消息前缀",
-    "description": "MC玩家消息在统一上下文中的前缀标识",
+    "description": "转发到QQ群的MC消息前缀标识",
     "default": "[MC]"
   },
   "mc_server_dir": {
     "type": "string",
     "title": "MC服务器目录",
-    "description": "MC服务器根目录（含mods/的路径），如 /home/mc/server。留空则物品知识库功能不可用",
+    "description": "MC服务器根目录（含mods/的路径），如 /home/mc/server。物品知识库与MC聊天监听（自动读 logs/latest.log）都需要它",
     "default": ""
   },
   "mc_version": {

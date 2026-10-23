@@ -50,15 +50,14 @@ broadcast-rcon-to-ops=true
 | `rcon_password` | RCON密码 | - |
 | `admin_ids` | 管理员ID列表（QQ号或MC玩家名） | `[]`（空表示所有人可用） |
 | `enable_dangerous_commands` | 启用危险命令（如stop） | `false` |
-| `enable_log_monitor` | 启用MC日志监控 | `false` |
-| `log_server_host` | 日志服务器地址 | `127.0.0.1` |
-| `log_server_port` | 日志服务器端口 | `25576` |
 | `enable_chat_response` | 将LLM响应发送回MC聊天框 | `true` |
 | `bot_nickname` | 在MC中显示的机器人昵称 | `"Bot"` |
 | `enable_unified_context` | 启用MC和QQ群的统一上下文 | `false` |
-| `unified_group_umo` | 统一上下文目标群UMO | `""` |
-| `mc_message_prefix` | MC消息在统一上下文中的前缀 | `"[MC]"` |
-| `mc_server_dir` | MC服务端根目录（含 mods/ 的路径）；留空则物品知识库不可用 | `""` |
+| `enable_system_event_context` | 系统事件（进退服/死亡/成就）也注入LLM上下文 | `false` |
+| `unified_group_umo` | 绑定群UMO（推荐用 `mc绑定` 命令自动设置，无需手填） | `""` |
+| `mc_bridge_prefix` | 游戏内聊天转发到QQ群的前缀（留空=全转） | `"mc喊话"` |
+| `mc_message_prefix` | 转发到QQ群的MC消息前缀 | `"[MC]"` |
+| `mc_server_dir` | MC服务端根目录（含 mods/ 的路径）；物品知识库与MC聊天监听都需要它 | `""` |
 | `mc_version` | MC版本（如 1.20.1）；留空自动从服务端目录探测 | `""` |
 | `mc_client_dir` | 客户端 .minecraft 目录（可选）：离线取原版中文名、精确判断方块能否 give | `""` |
 | `vanilla_zh_download` | 重建时自动下载官方原版 zh_cn.json（按版本、sha1校验、失败回退BMCLAPI） | `true` |
@@ -72,12 +71,10 @@ broadcast-rcon-to-ops=true
   "rcon_password": "your_password",
   "admin_ids": ["123456789", "Steve", "Alex"],
   "enable_dangerous_commands": false,
-  "enable_log_monitor": true,
-  "log_server_host": "127.0.0.1",
-  "log_server_port": 25576,
   "enable_chat_response": true,
   "bot_nickname": "MC助手",
   "enable_unified_context": false,
+  "enable_system_event_context": false,
   "unified_group_umo": "",
   "mc_message_prefix": "[MC]",
   "mc_server_dir": "/home/mc/server",
@@ -88,80 +85,55 @@ broadcast-rcon-to-ops=true
 }
 ```
 
-### 3. MC游戏内聊天支持（可选）
+### 3. MC游戏内聊天支持（自动）
 
-如果启用 `enable_log_monitor`，可以在MC游戏内直接与机器人对话：
+只要配置了 `mc_server_dir`（MC 服务端根目录），插件会**自动监听** `logs/latest.log`：
+- 无需在 MC 服务器上运行任何额外脚本（旧的 log_server.py 方式已废弃删除）
+- MC 服务器启动后自动开始监听，停止/重启后自动恢复，无需重载插件
+- 要求 AstrBot 与 MC 服务端在**同一台机器**
 
-1. **在MC服务器机器上运行日志服务器**：
-   ```bash
-   python log_server.py（注意，请自行修改代码文件配置参数）
-   ```
-
-2. **配置权限**：
-   - `admin_ids` 中添加MC玩家名即可授予权限(你游戏名是啥就填啥)
-   - 例如：`"admin_ids": ["Steve", "Alex"]` 允许这两个MC玩家执行管理命令
-   - 格式：MC玩家的user_id为 `mc_player_{玩家名}`
-
-3. **在MC中使用**：
-   - 所有MC聊天消息都会提交到AstrBot，LLM会看到完整的聊天上下文
-   - 唤醒词在AstrBot的 `wake_prefix` 配置中统一管理（如 `"wake_prefix": ["小面包"]`）
-   - 只有包含唤醒词的消息才会触发LLM回复
-   - 示例：发送 `小面包 查看在线玩家`，机器人会自动回复到MC聊天框
+**在游戏里与机器人对话**：
+- 所有MC聊天消息都会提交到AstrBot，LLM会看到完整的聊天上下文
+- 唤醒词在AstrBot的 `wake_prefix` 配置中统一管理（如 `"wake_prefix": ["小面包"]`）
+- 只有包含唤醒词的消息才会触发LLM回复
+- 示例：发送 `小面包 查看在线玩家`，机器人会自动回复到MC聊天框
 
 **权限校验说明**：
-- QQ消息：使用QQ号校验（如 `"123456789"`）
-- MC消息：使用玩家名校验（如 `"Steve"`）
-- 系统会自动识别消息来源并应用对应的权限规则
+- `admin_ids` 中添加MC玩家名即可授予权限（你游戏名是啥就填啥）
+- QQ消息使用QQ号校验，MC消息使用玩家名校验，系统自动识别来源
+- MC玩家的user_id格式为 `mc_player_{玩家名}`
 
-### 4. 统一会话上下文（高级功能）
+### 4. 群绑定与聊天互通
 
-启用后，MC游戏内聊天和指定QQ群可以共享同一个对话上下文，实现跨平台无缝交流。
+在目标QQ群里发一条命令即可绑定，无需手抄任何配置：
 
-**功能特性**：
-- 🔗 **统一上下文**：MC玩家和QQ群成员在同一对话中交流
-- 🤖 **双向感知**：LLM能同时看到MC和QQ的消息历史
-- 🎯 **定向推送**：支持将MC事件推送到指定QQ群
-- 🛠️ **工具支持**：提供 `send_to_qq_group` 工具，让LLM主动向QQ群发送消息
+| 命令 | 说明 | 权限 |
+|------|------|------|
+| `mc绑定` | 把当前群绑定为MC消息转发目标 | 管理员 |
+| `mc解绑` | 解除绑定，停止转发 | 管理员 |
+| `mc喊话 <内容>` | 把消息发送到MC游戏内聊天（带QQ昵称前缀） | 绑定群成员，5秒冷却 |
 
-**配置步骤**：
+绑定后自动生效的功能：
+- 📨 **MC→QQ 传话**：游戏内发送以 `mc喊话` 开头的消息会转发到绑定群（前缀可用 `mc_bridge_prefix` 配置修改或留空全转）；进服/退服/死亡/成就等系统事件自动推送到绑定群（带 `[MC]` 前缀）
+- 💬 **QQ→MC 喊话**：`mc喊话` 命令经 RCON 把消息送进游戏
+- 🤖 **LLM 传话**：MC玩家通过唤醒词与LLM对话，回复自动回到游戏；LLM 也可用 `send_to_qq_group` 工具主动向绑定群发消息
 
-1. **获取QQ群UMO**：
-   - 在目标QQ群中发送任意消息
-   - 在AstrBot后台日志中查找类似 `aiocqhttp_default:GroupMessage:123456789` 的UMO字符串
-   - 格式说明：`平台ID:消息类型:群号`
+**平台兼容性**：绑定命令自动捕获当前群会话（UMO），OneBot（aiocqhttp）与QQ官方机器人（qq_official）等平台均可使用。
+> QQ官方机器人注意：其主动推送要求目标群在机器人启动后至少有过一条消息，且有腾讯官方配额限制；机器人重启后在群里任意发言一次即可恢复推送。
 
-2. **启用统一上下文**：
-   ```json
-   {
-     "enable_log_monitor": true,
-     "enable_unified_context": true,
-     "unified_group_umo": "aiocqhttp_default:GroupMessage:123456789",
-     "mc_message_prefix": "[MC]"
-   }
-   ```
-
-3. **工作原理**：
-   - 所有MC聊天消息会自动提交到AstrBot的指定QQ群会话
-   - MC消息会带有发送者昵称（如 `Steve(MC)`）
-   - LLM能看到完整的MC和QQ混合对话历史
-   - MC系统事件（登入、登出、成就、死亡）也会记录到会话上下文
-   - LLM可使用 `send_to_qq_group` 工具主动向QQ群发送消息
+**统一上下文（可选）**：开启 `enable_unified_context` 后，MC聊天会注入绑定群的LLM会话上下文——LLM 能同时看到MC和QQ的消息历史，实现跨平台无缝交流。系统事件注入由 `enable_system_event_context` 单独控制。
 
 **使用示例**：
 
 ```
 [QQ群] 用户A: @Bot 服务器现在有多少人在线？
-[MC] Steve: 有3个人，但是Alex好像挂机了
-[QQ群] Bot: 当前在线3人：Steve、Alex、Notch。根据Steve的反馈，Alex可能在挂机。
-[MC] Alex: 我没挂机！我在挖矿呢
-[QQ群] Bot: 好的，Alex说他在挖矿，并没有挂机。
+[MC游戏内] Steve: 小面包 有几个人在线？
+[QQ群] Bot: 当前在线3人：Steve、Alex、Notch。
+[MC游戏内] Alex: mc喊话 我没挂机！我在挖矿呢
+[QQ群] [MC] <Alex> 我没挂机！我在挖矿呢
+[QQ群] 用户A: mc喊话 Alex加油挖矿
+[MC游戏内] [群聊] 用户A: Alex加油挖矿
 ```
-
-**注意事项**：
-- 统一上下文需要先启用日志监控（`enable_log_monitor: true`）
-- `unified_group_umo` 必须填写正确的UMO格式
-- MC消息前缀可自定义，用于在QQ群中区分消息来源
-- 所有MC消息都会提交到指定QQ群的会话上下文，由AstrBot的 `wake_prefix` 控制是否唤醒LLM
 
 ## 📖 使用方法
 

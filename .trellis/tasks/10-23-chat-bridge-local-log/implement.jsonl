@@ -1,0 +1,4 @@
+{"file": ".trellis/tasks/10-23-chat-bridge-local-log/prd.md", "reason": "需求与验收标准（R1-R8 / AC1-AC7）"}
+{"file": ".trellis/tasks/10-23-chat-bridge-local-log/design.md", "reason": "技术设计：模块边界、数据流、风险缓解"}
+{"file": ".trellis/tasks/10-23-chat-bridge-local-log/research/01-findings.md", "reason": "三路子代理调研结论：现状痛点、Scintilla 可借鉴实现、AstrBot 平台 API 事实"}
+{"file": ".trellis/spec/backend/index.md", "reason": "后端层编码规范索引"}

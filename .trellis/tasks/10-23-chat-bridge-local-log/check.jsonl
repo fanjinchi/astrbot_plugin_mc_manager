@@ -1,0 +1,4 @@
+{"file": ".trellis/tasks/10-23-chat-bridge-local-log/prd.md", "reason": "验收标准 AC1-AC7 是检查基准"}
+{"file": ".trellis/tasks/10-23-chat-bridge-local-log/design.md", "reason": "检查实现是否符合模块边界与风险缓解设计"}
+{"file": ".trellis/tasks/10-23-chat-bridge-local-log/research/01-findings.md", "reason": "检查是否复用调研结论（RCON 1460B、平台 API、轮转检测）"}
+{"file": ".trellis/spec/backend/index.md", "reason": "后端编码规范索引"}

@@ -15,10 +15,12 @@
 main.py                  插件入口（唯一 @register 的 Star 子类）
  ├─→ tools/*.py          纯 RCON 命令层：不 import astrbot，不打日志
  ├─→ rcon_client.py      RCON 异步长连接封装
- └─→ log_client.py       日志监控客户端（TCP + 心跳 + 日志行解析）
-
-log_server.py            独立脚本，部署在 MC 服务器那台机器上，禁止 import astrbot
+ ├─→ log_watcher.py      本地日志监听器：轮询 mc_server_dir/logs/latest.log（要求同机）
+ └─→ text_outbound.py    RCON 出站文本纯函数：tellraw 拼接 + 1460B 字节预算切段
 ```
+
+> 2026-10 重构：旧的「log_server.py（MC 机独立脚本）+ log_client.py（TCP 客户端）」双进程通道已删除，
+> 改为插件内 LogWatcher 直读本地日志。AstrBot 与 MC 服务端不同机时聊天互通不可用（有意放弃）。
 
 ---
 
@@ -28,8 +30,8 @@ log_server.py            独立脚本，部署在 MC 服务器那台机器上，
 astrbot_plugin_mc_manager/
 ├── main.py                 # Star 子类 MCManagerPlugin：全部 @filter.llm_tool / @filter.command、事件钩子、消息中转
 ├── rcon_client.py          # MinecraftRCON：长连接、重试、连接测试
-├── log_client.py           # LogClient：连日志服务器、心跳、把日志行解析成回调
-├── log_server.py           # LogServer：tail latest.log → 广播；独立进程运行
+├── log_watcher.py          # LogWatcher：轮询本地 latest.log、轮转检测、把日志行解析成回调
+├── text_outbound.py        # tellraw 命令构造 + UTF-8 字节预算切段（纯函数，可独立测试）
 ├── tools/
 │   ├── __init__.py         # 显式导出三个子模块（不用星号导入）
 │   ├── id_utils.py         # normalize_mc_id()：资源 ID 归一化（无命名空间才补 minecraft:）
@@ -79,7 +81,7 @@ astrbot_plugin_mc_manager/
 | 新增一个 LLM 工具 | `main.py` 的 `tool_*`；实现下沉到 `tools/` |
 | 新增知识库能力（扫新来源/新查询） | `kb/` 对应模块；装配仍只在 `main.py` |
 | 新增配置项 | `_conf_schema.json` + `main.py.__init__` 里 `self.config.get(...)` |
-| 新增 MC 日志事件 | `log_client.py` 加 `*_PATTERN` 常量 + 回调字段 + `set_*_callback` + `_process_log_line` 分支；`main.py` 加 `_on_*` 并用 `_send_system_event` 上报 |
+| 新增 MC 日志事件 | `log_watcher.py` 加 `*_PATTERN` 常量 + 回调字段 + `set_*_callback` + `_process_log_line` 分支；`main.py` 加 `_on_*`，按需 `_forward_to_bound_group` / `_send_system_event` 上报 |
 | 新增对外指令 | `main.py` 的 `@filter.command`（`test_connection`、`test_log` 是范例） |
 
 ### 一个"新增 RCON 工具"的完整改动清单
@@ -118,6 +120,6 @@ execute_command 替代不了的附加逻辑（中文映射、ID 归一化、权�
 ## 反例（本项目明确不这么做）
 
 - 不新增顶层包或 `src/` 布局；插件目录本身就是一个包。
-- 不在 `tools/` 或 `log_server.py` 里 import `astrbot`。
+- 不在 `tools/` 或 `text_outbound.py` 里 import `astrbot`（`log_watcher.py` 只用 astrbot 的 logger）。
 - 不为单条命令新建模块，先并入现有四类；真的成体系再开 `xxx_tools.py`。
 - 不在 `main.py` 里直接拼 MC 命令发 RCON（例外：纯 UI 的 `_send_single_mc_message`，`main.py:428-445`）。

@@ -20,13 +20,14 @@
 
 - **新增 `@filter.llm_tool` 却不做权限检查。** 只读查询是唯一例外（3 个，见 error-handling）。
 - **在 `tools/*.py` 里 import astrbot / 打日志 / print。** 这一层保持无框架依赖，便于独立测试与复用。
-- **在 `main.py` 里直接拼 MC 命令发 RCON**，实现应下沉到 `tools/`。唯一现存例外是纯 UI 的
-  `_send_single_mc_message`（`main.py:428-445`），新增代码不要效仿。
+- **在 `main.py` 里直接拼 MC 命令发 RCON**，实现应下沉到 `tools/`。豁免：游戏内聊天出栈文本统一走
+  `text_outbound.py` 纯函数（`build_tellraw_commands`，带 1460B 字节预算切段），`main.py` 只负责调用——
+  这是 2026-10 重构确立的特例，替代旧 `_send_single_mc_message` 的内联拼接。
 - **依赖 `self.is_admin()` 的返回值类型**（隐式返回 `None`，见"已知债务"）。
 - **用裸 `except:` 包业务逻辑**；只允许用于 `close()`/`wait_closed()` 这类清理。
 - **绕过 `enable_dangerous_commands` 开关**把 `stop`/`ban-ip` 之类命令暴露给 LLM。
 - **把 RCON 密码、完整 UMO 串写进日志或返回给模型。**
-- **调用不存在的同步 `rcon.execute()`。** 客户端只有 `execute_async`；`rcon_client.py:111/153` 是遗留死代码。
+- **调用不存在的同步 `rcon.execute()`。** 客户端只有 `execute_async`（死代码已于 2026-10 清除）。
 - **引入未在 `requirements.txt` 声明的第三方依赖。**
 - **给 `execute_async` 返回值加 `if not result` 式成败判断**（见 error-handling）。
 
@@ -133,7 +134,8 @@ async def give_item(player: str, item: str, count: int = 1) -> str:
    重点核对 `_inject_rcon()` 里有没有漏注入或写错模块名。
 3. **改了 RCON 行为：真机验证**。装到 AstrBot，`/test_connection`（`main.py:674`）看 RCON；`/test_log`
    （`:693`）看日志链路；再让 LLM 实际调一次改动的工具，看游戏内效果。
-4. **改了 `log_server.py`**：`python3 log_server.py <latest.log>` 单独跑，确认端口与插件配置一致。
+4. **改了 `log_watcher.py`**：用临时目录造一个假 latest.log 跑行为验证（解析正确性 / 不回放历史 /
+   轮转与重启恢复 / stop 无幽灵任务），脚本放 /tmp，不进仓库。
 
 不要为了一次改动去造一个测试框架来"证明"正确性；也不要写只覆盖 mock 的测试当作真机验证。
 
@@ -158,7 +160,6 @@ review 时逐条对：
 
 | 位置 | 现状 | 影响 |
 |---|---|---|
-| `rcon_client.py` | `get_online_players` 调用不存在的 `self.execute()`，全项目无人调用 | 死代码；新代码别参考 |
 | `main.py:447-470` | `is_admin()` 声明 `-> bool`，非管理员分支隐式返回 `None` | 靠假值侥幸工作 |
 | `main.py:200-259` vs `:261-313` | `_send_fake_event` 与 `_send_system_event` 大段重复 | 改 session/UMO 逻辑要改两处 |
 | `log_server.py:22` vs `:38` | 模块常量 `SERVER_PORT=25571`，`LogServer.__init__` 默认 / 插件配置默认都是 25576 | 直接 `python log_server.py` 用 25571，与插件默认不一致 |

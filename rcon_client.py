@@ -71,6 +71,10 @@ class MinecraftRCON:
             try:
                 client = await self._ensure_connection()
                 response = await client.send_cmd(command)
+                # aiomcrcon 的 send_cmd 返回 (响应文本, 请求ID) 元组，只取文本
+                # （旧代码直接把元组插进返回字符串，会产生 "('...', 5)" 这样的脏文本）
+                if isinstance(response, tuple):
+                    response = response[0]
                 logger.info(f"执行命令: {command}, 响应: {response}")
                 return response if response else "命令执行成功（无返回信息）"
             except (ConnectionRefusedError, ConnectionResetError, BrokenPipeError, OSError) as e:
@@ -95,41 +99,13 @@ class MinecraftRCON:
         try:
             client = await self._ensure_connection()
             response = await client.send_cmd("list")
+            if isinstance(response, tuple):
+                response = response[0]
             return True, f"连接成功！{response}"
         except ConnectionRefusedError:
             return False, f"无法连接到 {self.host}:{self.port}"
         except Exception as e:
             return False, f"连接失败: {str(e)}"
-    
-    def get_online_players(self) -> tuple[int, list[str]]:
-        """
-        获取在线玩家列表
-        
-        Returns:
-            (在线人数, 玩家列表)
-        """
-        response = self.execute("list")
-        
-        # 解析响应，格式通常为: "There are X of a max of Y players online: player1, player2"
-        try:
-            if "There are" in response:
-                # 提取玩家数量
-                parts = response.split("players online:")
-                count_part = parts[0]
-                # 从 "There are X of a max of Y" 中提取X
-                count = int(count_part.split()[2])
-                
-                # 提取玩家列表
-                if len(parts) > 1 and parts[1].strip():
-                    players = [p.strip() for p in parts[1].split(",") if p.strip()]
-                else:
-                    players = []
-                
-                return count, players
-            else:
-                return 0, []
-        except Exception:
-            return 0, []
     
     async def close(self):
         """关闭RCON连接"""
