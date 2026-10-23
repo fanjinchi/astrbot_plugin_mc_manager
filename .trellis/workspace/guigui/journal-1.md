@@ -30,3 +30,27 @@
 ### Status
 
 [OK] **Completed**
+
+
+## Session 2: LLM工具精简（30→12）+ 原版命令知识库 + 删除脚本执行器
+<!-- trellis-session: v=2 fp=c90296e289593bee -->
+
+**Date**: 2026-10-23
+**Task**: LLM工具精简（30→12）+ 原版命令知识库 + 删除脚本执行器
+**Branch**: `master`
+
+### Summary
+
+评估并落地两项需求：① 工具从30精简到12（17个低频薄封装走execute_command兜底，whitelist/banlist收回管理员），新增search_mc_commands内置原版命令知识库（74条JSON+kb/commands.py，预留mod命令合并入口issue #5）；② 删除execute_script/script_executor.py（exec全量builtins+默认配置权限失效=RCE），多步任务由AstrBot电脑使用能力承接。双轴评审（Standards/Spec）无P0，2个P1（spec文档失真、send_to_qq_group缺权限检查）与4个P2全部修复，复查轮通过。另建issue #5（mod命令导入知识库），修正issue-tracker文档gh需显式-R。
+
+### Git Commits
+
+| Hash | Message |
+|------|---------|
+| `dbcf66c` | feat(工具): 精简LLM工具至12个并新增原版命令知识库，移除脚本执行器 |
+| `03ba4f9` | docs(spec): 同步工具精简后的目录结构与规范 |
+| `2225539` | docs(agents): 修正 gh 需显式指定 fork 仓库的说明 |
+
+### Status
+
+[OK] **Completed**
