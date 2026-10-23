@@ -66,8 +66,10 @@ class MCManagerPlugin(Star):
         self.enable_unified_context = self.config.get("enable_unified_context", False)
         self.unified_group_umo = self.config.get("unified_group_umo", "")
         self.mc_message_prefix = self.config.get("mc_message_prefix", "[MC]")
-        # 系统事件（进/退服、死亡、成就）是否也注入 LLM 会话上下文；转发到绑定群不受此开关控制
+        # 系统事件（进/退服、死亡、成就）注入 LLM 会话上下文的开关
         self.enable_system_event_context = self.config.get("enable_system_event_context", False)
+        # 系统事件是否推送到绑定群（默认开；只影响群推送，不影响上下文注入）
+        self.enable_system_event_forward = self.config.get("enable_system_event_forward", True)
         # 游戏内聊天转发到绑定群的前缀（默认 mc喊话，留空=全部转发）；系统事件转发不受此前缀控制
         self.mc_bridge_prefix = self.config.get("mc_bridge_prefix", "mc喊话")
         
@@ -190,6 +192,11 @@ class MCManagerPlugin(Star):
             # QQ官方机器人主动推送有配额/群发言前提等限制，失败仅记日志不打断监听
             logger.error(f"转发MC消息到绑定群失败: {e}")
     
+    async def _forward_system_event(self, text: str):
+        """系统事件转发到绑定群（受 enable_system_event_forward 控制；与上下文注入开关独立）"""
+        if self.enable_system_event_forward:
+            await self._forward_to_bound_group(text)
+    
     async def _on_player_join(self, player: str):
         """
         玩家登入事件回调
@@ -198,7 +205,7 @@ class MCManagerPlugin(Star):
             player: 玩家名称
         """
         logger.info(f"[MC事件] 玩家 {player} 加入了游戏")
-        await self._forward_to_bound_group(f"玩家 {player} 加入了游戏")
+        await self._forward_system_event(f"玩家 {player} 加入了游戏")
         if self.enable_system_event_context:
             await self._send_system_event(player, f"[系统消息] {player} 加入了游戏")
     
@@ -210,7 +217,7 @@ class MCManagerPlugin(Star):
             player: 玩家名称
         """
         logger.info(f"[MC事件] 玩家 {player} 离开了游戏")
-        await self._forward_to_bound_group(f"玩家 {player} 离开了游戏")
+        await self._forward_system_event(f"玩家 {player} 离开了游戏")
         if self.enable_system_event_context:
             await self._send_system_event(player, f"[系统消息] {player} 离开了游戏")
     
@@ -223,7 +230,7 @@ class MCManagerPlugin(Star):
             advancement: 成就名称
         """
         logger.info(f"[MC事件] 玩家 {player} 达成了成就 [{advancement}]")
-        await self._forward_to_bound_group(f"玩家 {player} 达成了成就 [{advancement}]")
+        await self._forward_system_event(f"玩家 {player} 达成了成就 [{advancement}]")
         if self.enable_system_event_context:
             await self._send_system_event(player, f"[系统消息] {player} 达成了成就 [{advancement}]")
     
@@ -236,7 +243,7 @@ class MCManagerPlugin(Star):
             reason: 死因描述
         """
         logger.info(f"[MC事件] 玩家死亡: {reason}")
-        await self._forward_to_bound_group(reason)
+        await self._forward_system_event(reason)
         if self.enable_system_event_context:
             await self._send_system_event(player, f"[系统消息] {reason}")
     

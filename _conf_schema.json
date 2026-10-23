@@ -50,8 +50,14 @@
   "enable_system_event_context": {
     "type": "bool",
     "title": "系统事件注入上下文",
-    "description": "是否把进服/退服/死亡/成就等系统事件也注入LLM会话上下文（转发到绑定群不受此开关控制）",
+    "description": "是否把进服/退服/死亡/成就等系统事件也注入LLM会话上下文（群推送由 enable_system_event_forward 控制）",
     "default": false
+  },
+  "enable_system_event_forward": {
+    "type": "bool",
+    "title": "系统事件推送到群",
+    "description": "是否把进服/退服/死亡/成就等系统事件推送到绑定群（默认开；只影响群推送，不影响 LLM 上下文注入）",
+    "default": true
   },
   "unified_group_umo": {
     "type": "string",
