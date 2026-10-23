@@ -3,8 +3,9 @@
 Issues and specs for this repo live as GitHub issues. Use the `gh` CLI for all operations.
 
 Repo: `fanjinchi/astrbot_plugin_mc_manager` (a fork of `advent259141/astrbot_plugin_mc_manager`).
-`origin` points at the fork, so `gh` infers the right repo when run inside this clone; pass `-R` only
-when you deliberately mean the upstream repo.
+`origin` points at the fork, but the clone also has an `upstream` remote and `gh` resolves to it by
+default — always pass `-R fanjinchi/astrbot_plugin_mc_manager` explicitly (verified 2026-10: writes
+without `-R` 404 against the upstream).
 
 ## Conventions
 
