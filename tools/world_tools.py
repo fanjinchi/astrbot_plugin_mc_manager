@@ -1,6 +1,6 @@
 """
 世界操作工具
-包含天气、时间、难度、游戏规则、生成实体等功能
+包含天气、时间、生成实体功能
 """
 
 from typing import TYPE_CHECKING, Optional
@@ -98,94 +98,6 @@ async def set_time(time_value: str) -> str:
     return f"设置时间为 {time_value}: {result}"
 
 
-async def add_time(amount: int) -> str:
-    """
-    增加游戏时间
-
-    Args:
-        amount(number): 要增加的时间（游戏刻，20刻=1秒）
-
-    Returns:
-        执行结果信息
-    """
-    rcon = get_rcon()
-    result = await rcon.execute_async(f"time add {amount}")
-    return f"增加时间 {amount} 刻: {result}"
-
-
-async def set_difficulty(difficulty: str) -> str:
-    """
-    设置游戏难度
-
-    Args:
-        difficulty(string): 难度等级，可选值：peaceful（和平）、easy（简单）、normal（普通）、hard（困难）
-
-    Returns:
-        执行结果信息
-    """
-    rcon = get_rcon()
-    
-    # 标准化难度值
-    difficulty_map = {
-        "和平": "peaceful",
-        "简单": "easy",
-        "普通": "normal",
-        "困难": "hard",
-        "0": "peaceful",
-        "1": "easy",
-        "2": "normal",
-        "3": "hard",
-    }
-    difficulty = difficulty_map.get(difficulty, difficulty.lower())
-    
-    if difficulty not in ["peaceful", "easy", "normal", "hard"]:
-        return f"错误: 无效的难度 '{difficulty}'，可选值：peaceful、easy、normal、hard"
-    
-    result = await rcon.execute_async(f"difficulty {difficulty}")
-    return f"设置难度为 {difficulty}: {result}"
-
-
-async def set_gamerule(rule: str, value: str) -> str:
-    """
-    设置游戏规则
-
-    Args:
-        rule(string): 游戏规则名称，如doDaylightCycle、keepInventory、mobGriefing等
-        value(string): 规则值，通常为true或false
-
-    Returns:
-        执行结果信息
-    """
-    rcon = get_rcon()
-    
-    # 常用规则中文映射
-    rule_map = {
-        "昼夜更替": "doDaylightCycle",
-        "保留背包": "keepInventory",
-        "死亡不掉落": "keepInventory",
-        "生物破坏": "mobGriefing",
-        "怪物破坏": "mobGriefing",
-        "自然生命恢复": "naturalRegeneration",
-        "火焰蔓延": "doFireTick",
-        "天气变化": "doWeatherCycle",
-    }
-    rule = rule_map.get(rule, rule)
-    
-    # 标准化布尔值
-    value_map = {
-        "开": "true",
-        "关": "false",
-        "是": "true",
-        "否": "false",
-        "开启": "true",
-        "关闭": "false",
-    }
-    value = value_map.get(value, value.lower())
-    
-    result = await rcon.execute_async(f"gamerule {rule} {value}")
-    return f"设置游戏规则 {rule} = {value}: {result}"
-
-
 async def summon_entity(entity: str, x: Optional[float] = None, y: Optional[float] = None, z: Optional[float] = None) -> str:
     """
     在指定位置生成实体
@@ -210,46 +122,3 @@ async def summon_entity(entity: str, x: Optional[float] = None, y: Optional[floa
     else:
         result = await rcon.execute_async(f"summon {entity}")
         return f"生成 {entity}: {result}"
-
-
-async def fill_blocks(x1: int, y1: int, z1: int, x2: int, y2: int, z2: int, block: str, mode: str = "replace") -> str:
-    """
-    用指定方块填充区域
-
-    Args:
-        x1(number): 起点X坐标
-        y1(number): 起点Y坐标
-        z1(number): 起点Z坐标
-        x2(number): 终点X坐标
-        y2(number): 终点Y坐标
-        z2(number): 终点Z坐标
-        block(string): 方块类型，如stone、air、diamond_block；模组方块用完整ID，如 create:brass_block
-        mode(string): 填充模式，可选：replace（替换）、destroy（摧毁）、keep（保留）、hollow（空心）、outline（轮廓）
-
-    Returns:
-        执行结果信息
-    """
-    rcon = get_rcon()
-    
-    # 补全原版 ID 的命名空间，模组 ID 原样保留
-    block = normalize_mc_id(block)
-    
-    result = await rcon.execute_async(f"fill {x1} {y1} {z1} {x2} {y2} {z2} {block} {mode}")
-    return f"填充区域 ({x1},{y1},{z1}) 到 ({x2},{y2},{z2}) 为 {block}: {result}"
-
-
-async def set_spawn(x: int, y: int, z: int) -> str:
-    """
-    设置世界出生点
-
-    Args:
-        x(number): X坐标
-        y(number): Y坐标
-        z(number): Z坐标
-
-    Returns:
-        执行结果信息
-    """
-    rcon = get_rcon()
-    result = await rcon.execute_async(f"setworldspawn {x} {y} {z}")
-    return f"设置世界出生点为 ({x}, {y}, {z}): {result}"

@@ -174,7 +174,7 @@ broadcast-rcon-to-ops=true
 Bot: 在线玩家: There are 3 of a max of 20 players online: Steve, Alex, Notch
 
 用户: 把Steve踢出服务器，原因是挂机太久
-Bot: 踢出玩家 Steve: Kicked Steve: 挂机太久
+Bot: 执行命令 'kick Steve 挂机太久': Kicked Steve: 挂机太久
 
 用户: 给Alex 64个钻石
 Bot: 给予 Alex 64个 minecraft:diamond: Given [Diamond] x 64 to Alex
@@ -186,82 +186,51 @@ Bot: 设置时间为 day: Set the time to 1000
 Bot: 设置天气为 clear: Changed the weather to clear
 
 用户: 封禁Hacker这个玩家
-Bot: 封禁玩家 Hacker: Banned Hacker: 违反服务器规则
+Bot: 执行命令 'ban Hacker 违反服务器规则': Banned Hacker: 违反服务器规则
 
 用户: 把难度调成困难
-Bot: 设置难度为 hard: Set game difficulty to Hard
+Bot: 执行命令 'difficulty hard': Set game difficulty to Hard
 
 用户: 开启死亡不掉落
-Bot: 设置游戏规则 keepInventory = true: Gamerule keepInventory is now set to: true
+Bot: 执行命令 'gamerule keepInventory true': Gamerule keepInventory is now set to: true
 ```
 
 ## 🛠️ 支持的功能
 
-### 玩家管理
-- ✅ 踢出玩家（kick）🔒
-- ✅ 封禁/解封玩家（ban/pardon）🔒
-- ✅ 管理OP权限（op/deop）🔒
-- ✅ 白名单管理（whitelist add/remove）🔒
+插件只保留少量高价值专用工具，其余 MC 命令统一由 `execute_command` 通用工具执行，
+LLM 不确定命令写法时会先查 `search_mc_commands` 内置命令知识库。
 
-### 游戏操作
-- ✅ 给予物品（give）🔒
-- ✅ 传送玩家（tp）🔒
-- ✅ 设置游戏模式（gamemode）🔒
-- ✅ 杀死实体（kill）🔒
-- ✅ 清空背包（clear）🔒
-- ✅ 设置经验（xp）🔒
+### 🟢 信息查询（🆓 无需权限）
+- ✅ 查看在线玩家（list_players）
+- ✅ 搜索物品/方块/实体知识库（search_mc_items）
+- ✅ 搜索MC命令用法（search_mc_commands）：内置原版命令清单，支持中文描述搜索
 
-### 服务器管理
-- ✅ 查看在线玩家（list）🆓
-- ✅ 服务器广播（say）🔒
-- ✅ 格式化消息（tellraw）🔒
-- ✅ 屏幕标题（title）🔒
-- ✅ 保存世界（save-all）🔒
-- ✅ 查看白名单（whitelist list）🆓
-- ✅ 查看封禁列表（banlist）🆓
-- ✅ 执行自定义命令（execute_command）🔒
-- ⚠️ 停止服务器（stop）🔒 - 需启用危险命令
+### 🎮 高频游戏操作（🔒）
+- ✅ 给予物品（give_item）：支持模组物品完整ID
+- ✅ 传送玩家（teleport_player）
+- ✅ 设置游戏模式（set_gamemode）：支持中文「生存/创造/冒险/旁观」
+- ✅ 设置天气（set_weather）/ 设置时间（set_time）：支持中文
+- ✅ 生成实体（summon_entity）：支持模组实体完整ID
 
-### 世界操作
-- ✅ 设置天气（weather）🔒
-- ✅ 设置时间（time）🔒
-- ✅ 设置难度（difficulty）🔒
-- ✅ 设置游戏规则（gamerule）🔒
-- ✅ 生成实体（summon）🔒
+### 💬 消息与互通（🔒）
+- ✅ 公屏格式化消息（tellraw）：MC 聊天桥的回复出口
+- ✅ 发送消息到QQ群（send_to_qq_group）
+  - 需要启用统一上下文功能
+  - 允许LLM主动向配置的QQ群发送消息
 
-### 🆕 脚本执行器
-- ✅ 执行Python脚本（execute_script）🔒
-- ✅ 列出可用工具（list_script_tools）🆓
+### 🔧 通用命令执行（🔒）
+- ✅ 执行任意命令（execute_command）：踢人、封禁、白名单、难度、游戏规则、屏幕标题、
+  保存世界等一切没有专用工具的操作都走它；不确定用法时先查 search_mc_commands
+- ⚠️ `stop`、`ban-ip` 为危险命令，默认拦截，需在配置中启用 `enable_dangerous_commands`
 
 ### 📚 物品知识库
 - ✅ 搜索物品/方块/实体（search_mc_items）🆓
 - ✅ 重建知识库（/mc_kb_rebuild）🔒
 - ✅ 查看构建状态与覆盖率（/mc_kb_status）🔒
 
-### 🔗 统一上下文工具
-- ✅ 发送消息到QQ群（send_to_qq_group）🔒
-  - 需要启用统一上下文功能
-  - 允许LLM主动向配置的QQ群发送消息
-  - 可用于向QQ群推送MC服务器事件或状态
-
 **图标说明：**
 - 🔒 需要管理员权限
 - 🆓 无需权限，所有人可用
-
-## 🎯 脚本执行器
-
-插件内置了强大的脚本执行器，允许LLM编写Python脚本来完成复杂的自动化任务。
-
-
-### 脚本功能特性
-
-- ✅ **异步执行**：支持 async/await 语法
-- ✅ **工具集成**：可调用所有40+个MC管理工具
-- ✅ **超时控制**：默认60秒超时，可自定义
-- ✅ **错误处理**：完善的异常捕获和错误报告
-- ✅ **输出捕获**：自动捕获print输出
-
-
 
 ## 📚 物品知识库（可选）
 
@@ -328,19 +297,17 @@ AstrBot 与 MC 不同机时，把 `runtime_dump/` 目录拷到插件数据目录
 以下工具仅查询信息，不会修改服务器状态，**任何用户**都可以使用：
 
 - `list_players` - 查看在线玩家
-- `whitelist_list` - 查看白名单
-- `banlist` - 查看封禁列表
-- `list_script_tools` - 查看可用工具列表
 - `search_mc_items` - 搜索物品知识库（物品/方块/实体的 ID 与中英文名）
+- `search_mc_commands` - 搜索 MC 命令用法（内置原版命令清单 + 可选的模组命令导出）
 
 ### 🔴 需要权限（管理操作）
 所有其他工具都需要管理员权限，包括：
 
-- **玩家管理**：kick、ban、op等
-- **游戏操作**：give、tp、gamemode等
-- **服务器管理**：save、say、tellraw等
-- **世界管理**：weather、time、difficulty等
-- **脚本执行**：execute_script
+- **游戏操作**：give_item、teleport_player、set_gamemode、summon_entity 等
+- **世界操作**：set_weather、set_time 等
+- **消息互通**：tellraw、send_to_qq_group
+- **通用执行**：execute_command（踢人/封禁/白名单/难度/游戏规则等一切其他命令）
+  - whitelist/banlist 属于管理功能（游戏内需 3 级权限），查看也走 execute_command
 
 ### 权限配置示例
 
@@ -361,7 +328,6 @@ AstrBot 与 MC 不同机时，把 `runtime_dump/` 目录拷到插件数据目录
 3. **生产环境必须配置管理员列表**：不要留空 `admin_ids`
 4. **禁用危险命令**：保持 `enable_dangerous_commands` 为 `false`，除非确实需要
 5. **防火墙配置**：如果MC服务器和AstrBot不在同一台机器，确保RCON端口的安全
-6. **谨慎使用脚本执行器**：`execute_script` 可以调用任何已注册工具，请仅授予信任用户
 
 ## 🔧 故障排除
 
@@ -396,6 +362,18 @@ AstrBot 与 MC 不同机时，把 `runtime_dump/` 目录拷到插件数据目录
 3. 查看AstrBot日志获取详细错误信息
 
 ## 📝 更新日志
+
+### v1.4.0
+- ♻️ LLM 工具大幅精简（30 → 12）
+  - 删除 17 个低频命令薄封装（kick/ban/op/whitelist/kill/clear/xp/say/title/save_world/difficulty/gamerule 等），统一由 `execute_command` 通用工具执行
+  - whitelist/banlist 查询收回管理员（游戏内本就是 3 级权限命令）
+  - 免权限只读工具收敛为：list_players、search_mc_items、search_mc_commands
+- ✨ 新增 `search_mc_commands` 免权限工具
+  - 内置原版 MC 命令固定知识库（assets/vanilla_commands.json），支持命令名/中文描述模糊搜索
+  - LLM 调 execute_command 前可先查命令语法与权限等级；为模组命令导出（runtime dump）预留合并入口
+- 🔥 移除脚本执行器（execute_script / list_script_tools / script_executor.py）
+  - 安全原因：插件内 exec 执行 LLM 生成代码且默认配置下权限检查失效，等同进程级 RCE
+  - 多步批量操作改用 AstrBot 自带的电脑使用能力（computer_use_runtime）+ 多轮工具调用
 
 ### v1.3.0
 - ✨ 新增物品知识库（可选）

@@ -1,9 +1,9 @@
 """
 游戏操作工具
-包含给予物品、传送、游戏模式、经验等功能
+包含给予物品、传送、游戏模式功能
 """
 
-from typing import TYPE_CHECKING, Optional
+from typing import TYPE_CHECKING
 
 from .id_utils import normalize_mc_id
 
@@ -98,67 +98,3 @@ async def set_gamemode(player: str, mode: str) -> str:
     
     result = await rcon.execute_async(f"gamemode {mode} {player}")
     return f"设置 {player} 的游戏模式为 {mode}: {result}"
-
-
-async def kill_entity(target: str) -> str:
-    """
-    杀死指定实体或玩家
-
-    Args:
-        target(string): 目标选择器或玩家名称，如@e[type=zombie]杀死所有僵尸，或玩家名称
-
-    Returns:
-        执行结果信息
-    """
-    rcon = get_rcon()
-    result = await rcon.execute_async(f"kill {target}")
-    return f"杀死 {target}: {result}"
-
-
-async def clear_inventory(player: str, item: Optional[str] = None) -> str:
-    """
-    清空玩家背包或移除特定物品
-
-    Args:
-        player(string): 玩家名称
-        item(string): 可选，要移除的特定物品ID，不填则清空整个背包；模组物品用完整ID，如 create:brass_ingot
-
-    Returns:
-        执行结果信息
-    """
-    rcon = get_rcon()
-    
-    if item:
-        item = normalize_mc_id(item)
-        result = await rcon.execute_async(f"clear {player} {item}")
-        return f"从 {player} 的背包移除 {item}: {result}"
-    else:
-        result = await rcon.execute_async(f"clear {player}")
-        return f"清空 {player} 的背包: {result}"
-
-
-async def set_experience(player: str, amount: int, operation: str = "set", unit: str = "points") -> str:
-    """
-    设置或修改玩家经验
-
-    Args:
-        player(string): 玩家名称
-        amount(number): 经验数量
-        operation(string): 操作类型，set（设置）或add（添加），默认为set
-        unit(string): 单位，points（经验点数）或levels（等级），默认为points
-
-    Returns:
-        执行结果信息
-    """
-    rcon = get_rcon()
-    
-    # 验证操作类型
-    if operation.lower() not in ["set", "add"]:
-        operation = "set"
-    
-    # 验证单位
-    if unit.lower() not in ["points", "levels"]:
-        unit = "points"
-    
-    result = await rcon.execute_async(f"xp {operation} {player} {amount} {unit}")
-    return f"{operation} {player} 的经验 {amount} {unit}: {result}"

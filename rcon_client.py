@@ -131,27 +131,6 @@ class MinecraftRCON:
         except Exception:
             return 0, []
     
-    def execute_safe(self, command: str, dangerous_commands: list[str] = None) -> tuple[bool, str]:
-        """
-        安全执行命令（检查是否为危险命令）
-        
-        Args:
-            command: 要执行的命令
-            dangerous_commands: 危险命令列表
-            
-        Returns:
-            (是否执行, 结果消息)
-        """
-        if dangerous_commands is None:
-            dangerous_commands = ["stop", "ban-ip", "op", "deop"]
-        
-        cmd_base = command.split()[0].lower() if command else ""
-        
-        if cmd_base in dangerous_commands:
-            return False, f"命令 '{cmd_base}' 被标记为危险命令，已阻止执行"
-        
-        return True, self.execute(command)
-    
     async def close(self):
         """关闭RCON连接"""
         async with self._lock:
