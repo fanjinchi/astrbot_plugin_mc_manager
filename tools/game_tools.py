@@ -5,6 +5,8 @@
 
 from typing import TYPE_CHECKING, Optional
 
+from .id_utils import normalize_mc_id
+
 if TYPE_CHECKING:
     from ..rcon_client import MinecraftRCON
 
@@ -35,16 +37,15 @@ async def give_item(player: str, item: str, count: int = 1) -> str:
 
     Args:
         player(string): 要给予物品的玩家名称，使用@p表示最近的玩家，@a表示所有玩家
-        item(string): 物品ID，例如diamond、iron_sword、minecraft:golden_apple
+        item(string): 物品ID，例如diamond、iron_sword、minecraft:golden_apple；模组物品用完整ID，如 create:brass_ingot
         count(number): 物品数量，默认为1，最大64
 
     Returns:
         执行结果信息
     """
     rcon = get_rcon()
-    # 确保物品ID格式正确
-    if not item.startswith("minecraft:"):
-        item = f"minecraft:{item}"
+    # 补全原版 ID 的命名空间，模组 ID 原样保留
+    item = normalize_mc_id(item)
     
     # 限制数量范围
     count = max(1, min(count, 64))
@@ -120,7 +121,7 @@ async def clear_inventory(player: str, item: Optional[str] = None) -> str:
 
     Args:
         player(string): 玩家名称
-        item(string): 可选，要移除的特定物品ID，不填则清空整个背包
+        item(string): 可选，要移除的特定物品ID，不填则清空整个背包；模组物品用完整ID，如 create:brass_ingot
 
     Returns:
         执行结果信息
@@ -128,8 +129,7 @@ async def clear_inventory(player: str, item: Optional[str] = None) -> str:
     rcon = get_rcon()
     
     if item:
-        if not item.startswith("minecraft:"):
-            item = f"minecraft:{item}"
+        item = normalize_mc_id(item)
         result = await rcon.execute_async(f"clear {player} {item}")
         return f"从 {player} 的背包移除 {item}: {result}"
     else:

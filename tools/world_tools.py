@@ -5,6 +5,8 @@
 
 from typing import TYPE_CHECKING, Optional
 
+from .id_utils import normalize_mc_id
+
 if TYPE_CHECKING:
     from ..rcon_client import MinecraftRCON
 
@@ -189,7 +191,7 @@ async def summon_entity(entity: str, x: Optional[float] = None, y: Optional[floa
     在指定位置生成实体
 
     Args:
-        entity(string): 实体类型，如zombie、creeper、pig、minecraft:iron_golem等
+        entity(string): 实体类型，如zombie、creeper、pig、minecraft:iron_golem等；模组实体用完整ID，如 iceandfire:fire_dragon
         x(number): 可选，X坐标，不填则在随机位置生成
         y(number): 可选，Y坐标
         z(number): 可选，Z坐标
@@ -199,9 +201,8 @@ async def summon_entity(entity: str, x: Optional[float] = None, y: Optional[floa
     """
     rcon = get_rcon()
     
-    # 确保实体ID格式正确
-    if not entity.startswith("minecraft:"):
-        entity = f"minecraft:{entity}"
+    # 补全原版 ID 的命名空间，模组 ID 原样保留
+    entity = normalize_mc_id(entity)
     
     if x is not None and y is not None and z is not None:
         result = await rcon.execute_async(f"summon {entity} {x} {y} {z}")
@@ -222,7 +223,7 @@ async def fill_blocks(x1: int, y1: int, z1: int, x2: int, y2: int, z2: int, bloc
         x2(number): 终点X坐标
         y2(number): 终点Y坐标
         z2(number): 终点Z坐标
-        block(string): 方块类型，如stone、air、diamond_block
+        block(string): 方块类型，如stone、air、diamond_block；模组方块用完整ID，如 create:brass_block
         mode(string): 填充模式，可选：replace（替换）、destroy（摧毁）、keep（保留）、hollow（空心）、outline（轮廓）
 
     Returns:
@@ -230,9 +231,8 @@ async def fill_blocks(x1: int, y1: int, z1: int, x2: int, y2: int, z2: int, bloc
     """
     rcon = get_rcon()
     
-    # 确保方块ID格式正确
-    if not block.startswith("minecraft:"):
-        block = f"minecraft:{block}"
+    # 补全原版 ID 的命名空间，模组 ID 原样保留
+    block = normalize_mc_id(block)
     
     result = await rcon.execute_async(f"fill {x1} {y1} {z1} {x2} {y2} {z2} {block} {mode}")
     return f"填充区域 ({x1},{y1},{z1}) 到 ({x2},{y2},{z2}) 为 {block}: {result}"
