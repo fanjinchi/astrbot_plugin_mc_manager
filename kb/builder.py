@@ -345,6 +345,22 @@ def rebuild(server_dir: str, data_dir: str, db_path: Optional[str] = None, mc_ve
                        allow_download=vanilla_zh_download, log=log)
     warnings.extend(van.warnings)
     van_added, van_merged = _merge_vanilla(rows, van)
+
+    # minecraft: 命名空间以原版验证集为准：mod 的 data/ 里引用的高版本/不存在物品
+    # （如 1.20.1 服上的 mace）是幻影，落库前剔除；运行时 dump 的 minecraft: 行在
+    # 后面第 5 步才进来，不受影响（运行时注册表本身是权威）。
+    phantom_dropped = 0
+    if van.rows:
+        phantom = [rid for rid in rows
+                   if rid.startswith("minecraft:") and rid not in van.rows]
+        for rid in phantom:
+            del rows[rid]
+        phantom_dropped = len(phantom)
+        if phantom_dropped:
+            log("剔除 %d 个不在原版验证集里的 minecraft: 引用（跨版本/不存在物品）" % phantom_dropped)
+    else:
+        warnings.append("原版验证集为空，minecraft: 引用未做交叉校验（库中可能混入跨版本幻影条目）")
+
     cfpa_applied, cfpa_kept = _apply_cfpa(rows, cfpa_result.zh)
 
     # 4) 服主自定义补充
@@ -380,7 +396,8 @@ def rebuild(server_dir: str, data_dir: str, db_path: Optional[str] = None, mc_ve
         "mods": len(scan.mods),
         "jars": scan.stats.get("jars", 0),
         "scan": scan_stats,
-        "vanilla": dict(van.stats, merged=van_merged, added=van_added),
+        "vanilla": dict(van.stats, merged=van_merged, added=van_added,
+                        phantom_dropped=phantom_dropped),
         "cfpa": {
             "note": cfpa_note,
             "name": cfpa_result.info.get("name", ""),

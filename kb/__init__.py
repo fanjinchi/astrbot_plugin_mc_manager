@@ -5,6 +5,13 @@
 
 import os
 
+try:
+    from astrbot.api import logger
+except ImportError:  # 允许脱离 AstrBot 环境独立测试/复现（脚本直跑）
+    import logging
+
+    logger = logging.getLogger("mc_manager.kb")
+
 from . import builder, query, store
 
 __all__ = ["KnowledgeBase"]
@@ -43,8 +50,10 @@ class KnowledgeBase:
                 log=log,
             )
         except ValueError as exc:  # 配置/环境错误（用 ValueError，不引入自定义异常类）
+            logger.warning("物品知识库重建失败: %s", exc)
             return "❌ 知识库重建失败：%s" % exc
-        except Exception as exc:  # 重建失败不能拖垮插件，把原因原样带回给管理员
+        except Exception as exc:  # 重建失败不能拖垮插件，把原因原样带回给管理员，堆栈进日志
+            logger.exception("物品知识库重建异常")
             return "❌ 知识库重建异常：%s" % exc
         return query.format_rebuild(stats)
 
