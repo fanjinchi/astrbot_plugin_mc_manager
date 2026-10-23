@@ -94,7 +94,7 @@ async def give_item(player: str, item: str, count: int = 1) -> str:
 
 ### 4. 异步纪律
 
-所有 RCON 交互 `await rcon.execute_async(...)`；回调一律 `async def`（`LogClient` 用 `create_task` 调度）；
+所有 RCON 交互 `await rcon.execute_async(...)`；回调一律 `async def`（`LogWatcher` 用 `create_task` 调度）；
 阻塞式 IO（读日志文件）用 `asyncio` 原语而非同步调用。
 
 ### 5. 命令拼接与转义
@@ -128,12 +128,12 @@ async def give_item(player: str, item: str, count: int = 1) -> str:
 
 1. **必做：编译检查**
    ```bash
-   python3 -m compileall -q main.py rcon_client.py log_client.py log_server.py tools/ kb/
+   python3 -m compileall -q main.py rcon_client.py log_watcher.py text_outbound.py tools/ kb/
    ```
 2. **改了导入/装配：导入冒烟**。确认 `python3 -c "import ast; ast.parse(open('main.py').read())"` 之外，
    重点核对 `_inject_rcon()` 里有没有漏注入或写错模块名。
-3. **改了 RCON 行为：真机验证**。装到 AstrBot，`/test_connection`（`main.py:674`）看 RCON；`/test_log`
-   （`:693`）看日志链路；再让 LLM 实际调一次改动的工具，看游戏内效果。
+3. **改了 RCON 行为：真机验证**。装到 AstrBot，`/test_connection`（`main.py:671`）看 RCON；`/test_log`
+   （`:690`）看日志链路；再让 LLM 实际调一次改动的工具，看游戏内效果。
 4. **改了 `log_watcher.py`**：用临时目录造一个假 latest.log 跑行为验证（解析正确性 / 不回放历史 /
    轮转与重启恢复 / stop 无幽灵任务），脚本放 /tmp，不进仓库。
 
@@ -160,11 +160,9 @@ review 时逐条对：
 
 | 位置 | 现状 | 影响 |
 |---|---|---|
-| `main.py:447-470` | `is_admin()` 声明 `-> bool`，非管理员分支隐式返回 `None` | 靠假值侥幸工作 |
-| `main.py:200-259` vs `:261-313` | `_send_fake_event` 与 `_send_system_event` 大段重复 | 改 session/UMO 逻辑要改两处 |
-| `log_server.py:22` vs `:38` | 模块常量 `SERVER_PORT=25571`，`LogServer.__init__` 默认 / 插件配置默认都是 25576 | 直接 `python log_server.py` 用 25571，与插件默认不一致 |
+| `main.py:448-470` | `is_admin()` 声明 `-> bool`，非管理员分支隐式返回 `None` | 靠假值侥幸工作 |
+| `main.py:243-304` vs `:306-360` | `_send_fake_event` 与 `_send_system_event` 大段重复 | 改 session/UMO 逻辑要改两处 |
 | `tools/*.py` | `set_rcon`/`get_rcon` 三份复制 | 新增模块沿用复制，别急着抽象 |
-| `log_server.py` | 无 logger，22 处 `print` | 独立脚本的现状，保持一致即可 |
 
 ---
 

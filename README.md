@@ -76,6 +76,7 @@ broadcast-rcon-to-ops=true
   "enable_unified_context": false,
   "enable_system_event_context": false,
   "unified_group_umo": "",
+  "mc_bridge_prefix": "mc喊话",
   "mc_message_prefix": "[MC]",
   "mc_server_dir": "/home/mc/server",
   "mc_version": "",
@@ -187,8 +188,8 @@ LLM 不确定命令写法时会先查 `search_mc_commands` 内置命令知识库
 ### 💬 消息与互通（🔒）
 - ✅ 公屏格式化消息（tellraw）：MC 聊天桥的回复出口
 - ✅ 发送消息到QQ群（send_to_qq_group）
-  - 需要启用统一上下文功能
-  - 允许LLM主动向配置的QQ群发送消息
+  - 需要先绑定群（管理员在群里发 mc绑定）
+  - 允许LLM主动向绑定的QQ群发送消息
 
 ### 🔧 通用命令执行（🔒）
 - ✅ 执行任意命令（execute_command）：踢人、封禁、白名单、难度、游戏规则、屏幕标题、

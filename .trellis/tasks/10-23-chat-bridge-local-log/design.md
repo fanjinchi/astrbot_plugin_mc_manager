@@ -34,7 +34,7 @@ QQ→MC 仅两个入口：LLM 回复（现状保留）+ `mc喊话` 命令（新�
 - 编码嗅探：首次读取时 UTF-8 / GBK 评分择优，之后固定（服务端日志编码不会中途变）。
 - IO 隔离：文件 IO 放 daemon 单线程执行器，单次 15s 超时，单飞——防止 NFS/磁盘卡死拖住事件循环（借鉴 Scintilla，不照搬其完整实现）。
 - 热重载防护：任务代际计数，stop() 后旧代际任务直接退出；所有 task 持引用登记，terminate 时统一 cancel。
-- 解析正则：从 log_client.py 原样搬迁 CHAT/JOIN/LEAVE/ADVANCEMENT/DEATH 五类（行为不退步；已知局限——英文句式、中文玩家名——记入 README 即可）。
+- 解析正则：在 log_client.py 五类事件基础上兼容 Forge/NeoForge 的 logger 段（`[Server thread/INFO] [logger/]:`），先剥出 content 再按内容正则解析；死亡只认「玩家名 + 原版死因句式」并排除实体死亡行（行为不退步；中文日志句式仍不在支持范围）。
 - 回调接口：on_chat(player, message) / on_join(player) / on_leave(player) / on_advancement(player, adv) / on_death(player, message)。
 
 ### 2. 绑定存储（修订：直接写 AstrBot 配置项）
@@ -42,17 +42,17 @@ QQ→MC 仅两个入口：LLM 回复（现状保留）+ `mc喊话` 命令（新�
   实施时按项目 database-guidelines「不新增 data.json 存状态/配置」的条款，改为 `mc绑定` 命令直接写
   `unified_group_umo` 配置项 + `self.config.save_config()` 落盘。绑定关系即配置，配置面板可见可改，
   语义反而更一致。`unified_group_umo` 同时承担「绑定群」与「统一上下文目标群」两个角色。
-- 加载时机：插件 __init__ 读文件；绑定/解绑命令即时读写。
+- 加载时机：插件 __init__ 读配置项 unified_group_umo；绑定/解绑命令改写配置项并 save_config() 即时生效。
 
 ### 3. 命令（main.py）
-- `mc绑定`：仅 admin_ids 内用户；校验当前是群消息（event.get_message_type()）；取 event.unified_msg_origin 写入 chat_bridge.json；回复确认（含识别到的平台名）。
+- `mc绑定`：仅 admin_ids 内用户；校验当前是群消息（get_group_id() 非空）；取 event.unified_msg_origin 写入 `unified_group_umo` 配置并 save_config()（实现订正见 §2）；拒绝 MC 聊天伪造事件（`_is_mc_fake_event`）；回复确认（含识别到的平台名与转发前缀）。
 - `mc解绑`：同上，清除绑定。
 - `mc喊话 <内容>`：需已启用 RCON；取 event.get_sender_name() 作昵称前缀；经 text_outbound 切段后 tellraw @a；频率保护：同一发送者 5s 冷却（内存字典即可）。
 - 命令命名走 AstrBot 指令注册（@filter.command），与现有 mc_kb_rebuild 等一致。
 
 ### 4. 转发与统一上下文（main.py 改造）
-- MC→QQ 转发：_forward_to_bound(text)：读绑定 UMO → context.send_message(umo, MessageChain().message(f"{prefix}{text}"))。mc_message_prefix 配置项在此真正生效（默认 "[MC]"）。发送失败仅 warning（含 qqofficial 群未发言场景）。
-- 统一上下文：_send_fake_event 的 platform 参数从绑定 UMO 第一段取（`umo.split(":",1)[0]`），无绑定时回退 "aiocqhttp" 现状行为并 warning。系统事件注入上下文由新开关 enable_system_event_context（默认 false）控制；聊天注入沿用 enable_unified_context。
+- MC→QQ 转发：_forward_to_bound_group(text)：读绑定 UMO → context.send_message(umo, MessageChain().message(f"{prefix}{text}"))。mc_message_prefix 配置项在此真正生效（默认 "[MC]"）。玩家聊天先过 mc_bridge_prefix 过滤（默认 mc喊话，留空=全转；前缀从转发文本里剥掉），系统事件不受前缀控制；发送失败仅 warning（含 qqofficial 群未发言场景）。
+- 统一上下文：_send_fake_event 的 platform 参数从绑定 UMO 第一段取（`umo.split(":",1)[0]`），无绑定时取当前第一个已加载平台实例，一个平台都没有才回退 "aiocqhttp"（create_event 抛错会被吞掉）；MC 聊天伪造事件在 mc绑定/mc解绑/mc喊话 命令入口被拒绝。系统事件注入上下文由新开关 enable_system_event_context（默认 false）控制；聊天注入沿用 enable_unified_context。
 - 无绑定群时：转发跳过；统一上下文自动停用（warning 一次）。
 
 ### 5. RCON 出站文本（text_outbound.py 新增，纯函数）
@@ -63,18 +63,18 @@ QQ→MC 仅两个入口：LLM 回复（现状保留）+ `mc喊话` 命令（新�
 ### 6. 配置 schema（_conf_schema.json）
 - 删除：enable_log_monitor、log_server_host、log_server_port、log_reconnect_interval、log_max_reconnect_attempts。
 - 保留：enable_chat_response、bot_nickname、enable_unified_context、unified_group_umo（语义改为初始绑定，可留空）、mc_message_prefix（R4 生效）。
-- 新增：enable_system_event_context（bool，默认 false）。
+- 新增：enable_system_event_context（bool，默认 false）、mc_bridge_prefix（string，默认 "mc喊话"，游戏内聊天转发到群的前缀，留空=全转）。
 - 旧配置文件里残留的已删 key 由 AstrBot 自然忽略，无需迁移代码。
 
 ### 7. 顺手修复（R8）
-- rcon_client.py：删除 get_online_players 死代码；terminate() 中 await self.rcon.close()。
+- rcon_client.py：删除 get_online_players 死代码；terminate() 中 await self.rcon.close()；连接类异常（RCONConnectionError/ClientNotConnectedError/struct.error）纳入断开重连后重试。
 
 ## 数据流
 
 1. MC 玩家发言 → latest.log 追加 → LogWatcher 1s 内读到 → 解析 → on_chat → main.py：
-   a. _forward_to_bound → QQ 群收到 "[MC] <Steve> xxx"（若已绑定）
+   a. 仅当消息以 mc_bridge_prefix（默认 mc喊话）开头时 → _forward_to_bound_group → QQ 群收到 "[MC] <Steve> xxx"（若已绑定）
    b. enable_unified_context 且已绑定 → 伪造事件注入该群会话 → 框架 wake_prefix 决定是否触发 LLM → 回复经 on_decorating_result 拦截 → RCON tellraw 回游戏（现状链路保留）。
-2. QQ 群 `mc喊话 xxx` → 校验+冷却 → text_outbound 切段 → RCON tellraw @a "[QQ] 昵称: xxx"。
+2. QQ 群 `mc喊话 xxx` → 校验+冷却 → text_outbound 切段 → RCON tellraw @a "[群聊] 昵称: xxx"。
 3. 系统事件 → on_join 等 → 转发绑定群；enable_system_event_context 时另注入上下文。
 
 ## 兼容性与回滚

@@ -63,12 +63,17 @@ class _DaemonExecutor:
 class LogWatcher:
     """latest.log 轮询监听器（类 + set_*_callback 注入，与项目基础设施风格一致）"""
 
-    # Minecraft 聊天日志的正则（沿用旧 log_client.py 的解析行为，不退步）
-    CHAT_PATTERN = re.compile(r"<(?P<player>[^>]+)>\s+(?P<message>.*)")
-    JOIN_PATTERN = re.compile(r"\[Server thread/INFO\]: (\S+) joined the game$")
-    LEAVE_PATTERN = re.compile(r"\[Server thread/INFO\]: (\S+) left the game$")
+    # 服务器线程日志行：原版是 "[12:34:56] [Server thread/INFO]: ..."，Forge/NeoForge
+    # 在 INFO] 后还带 logger 段（"[Server thread/INFO] [net.minecraft.server.MinecraftServer/]: ..."）。
+    # 先统一剥出冒号后的 content，再用同一套内容正则解析，兼容两种日志格式。
+    LOG_CONTENT_PATTERN = re.compile(
+        r"^(?:\[[^\]]+\]\s*)?\[Server thread/INFO\](?:\s+\[[^\]]+\])?:\s?(?P<content>.*)$"
+    )
+    CHAT_PATTERN = re.compile(r"^<(?P<player>[^>]+)>\s+(?P<message>.*)")
+    JOIN_PATTERN = re.compile(r"^(?P<player>\S+) joined the game$")
+    LEAVE_PATTERN = re.compile(r"^(?P<player>\S+) left the game$")
     ADVANCEMENT_PATTERN = re.compile(
-        r"\[Server thread/INFO\]: (\S+) has made the advancement \[(.+)\]$"
+        r"^(?P<player>\S+) has made the advancement \[(?P<advancement>.+)\]$"
     )
 
     # 死亡事件关键词（英文原版日志句式；中文服务端/非标准核心不在支持范围）
@@ -81,6 +86,13 @@ class LogWatcher:
         "experienced kinetic energy", "blew up", "was squashed",
         "fell out of", "died",
     ]
+
+    # 死因必须紧跟玩家名开头（避免系统行/实体死亡行里的 "died" 误报）
+    DEATH_PATTERN = re.compile(
+        r"^(?P<player>[A-Za-z0-9_]{1,16}) (?P<reason>"
+        + "|".join(map(re.escape, DEATH_KEYWORDS))
+        + r")\b.*$"
+    )
 
     POLL_INTERVAL = 1.0          # 轮询间隔（秒）
     IO_TIMEOUT = 15.0            # 单次文件 IO 超时（秒）
@@ -334,32 +346,41 @@ class LogWatcher:
     # ---------- 日志行解析（沿用旧 log_client.py 的行为与顺序） ----------
 
     def _process_log_line(self, log_line: str):
+        # 只处理服务器主线程 INFO 行；Forge/NeoForge 的 logger 段在这里统一剥掉
+        match = self.LOG_CONTENT_PATTERN.match(log_line)
+        if not match:
+            return
+        content = match.group("content").rstrip()
+        if not content:
+            return
+
         # 1. 玩家登入
-        match = self.JOIN_PATTERN.search(log_line)
+        match = self.JOIN_PATTERN.match(content)
         if match:
-            player = match.group(1)
+            player = match.group("player")
             logger.info(f"[MC事件] {player} 加入了游戏")
             self._dispatch(self.on_player_join, player)
             return
 
         # 2. 玩家登出
-        match = self.LEAVE_PATTERN.search(log_line)
+        match = self.LEAVE_PATTERN.match(content)
         if match:
-            player = match.group(1)
+            player = match.group("player")
             logger.info(f"[MC事件] {player} 离开了游戏")
             self._dispatch(self.on_player_leave, player)
             return
 
         # 3. 达成成就
-        match = self.ADVANCEMENT_PATTERN.search(log_line)
+        match = self.ADVANCEMENT_PATTERN.match(content)
         if match:
-            player, advancement = match.group(1), match.group(2)
+            player = match.group("player")
+            advancement = match.group("advancement")
             logger.info(f"[MC事件] {player} 达成了成就 [{advancement}]")
             self._dispatch(self.on_player_advancement, player, advancement)
             return
 
         # 4. 死亡事件
-        death = self._parse_death_event(log_line)
+        death = self._parse_death_event(content)
         if death:
             player, reason = death
             logger.info(f"[MC事件] {player} 死亡: {reason}")
@@ -367,32 +388,26 @@ class LogWatcher:
             return
 
         # 5. 玩家聊天（最宽松的匹配放最后）
-        match = self.CHAT_PATTERN.search(log_line)
+        match = self.CHAT_PATTERN.match(content)
         if match:
             player = match.group("player")
             message = match.group("message")
             logger.info(f"[MC聊天] <{player}> {message}")
             self._dispatch(self.on_chat, player, message)
 
-    def _parse_death_event(self, log_line: str) -> Optional[tuple[str, str]]:
-        """解析死亡事件，返回 (玩家名, 死因描述) 或 None"""
-        if "[Server thread/INFO]:" not in log_line:
+    def _parse_death_event(self, content: str) -> Optional[tuple[str, str]]:
+        """解析死亡事件（传入已剥掉日志前缀的内容），返回 (玩家名, 死因描述) 或 None
+
+        只认「玩家名 + 原版死因句式」开头的内容：
+        - 实体死亡行（如 Forge 的 "Villager Villager['...'] died, message: '...'"）不算玩家死亡
+        - 死因必须是日志行开头紧跟玩家名，避免系统行里的 "died" 之类误报
+        """
+        if content.startswith("<"):
             return None
-        try:
-            content = log_line.split("[Server thread/INFO]: ")[1].strip()
-            # 排除玩家聊天与其他系统行
-            if content.startswith("<"):
-                return None
-            if any(
-                kw in content
-                for kw in ("logged in", "lost connection", "joined the game", "left the game")
-            ):
-                return None
-            for keyword in self.DEATH_KEYWORDS:
-                if keyword in content:
-                    parts = content.split(" ")
-                    if parts:
-                        return parts[0], content
+        if " died, message:" in content:
+            # 实体（村民/宠物等）死亡行，会带上被击杀实体的展示名
             return None
-        except Exception:
+        match = self.DEATH_PATTERN.match(content)
+        if not match:
             return None
+        return match.group("player"), content

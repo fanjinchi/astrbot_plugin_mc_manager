@@ -13,7 +13,7 @@
 2. **给运维的**：`logger.error` / `logger.warning`，见 logging-guidelines。
 
 核心原则：**异常不允许穿透到 AstrBot 的事件管线**。日志回调是 `asyncio.create_task` 调度的
-（`log_client.py:347`），抛出去就是 unhandled task exception，没人接。
+（`log_watcher.py:195-201`），抛出去就是 unhandled task exception，没人接。
 
 ---
 
@@ -37,7 +37,7 @@ fallback。新增 tools 模块照抄这个守卫。
 
 ## Error Handling Patterns
 
-### A. RCON 层：连接类异常重试，其余立即返回（`rcon_client.py:55-86`）
+### A. RCON 层：连接类异常重试，其余立即返回（`rcon_client.py:70-105`）
 
 ```python
 max_retries = 2
@@ -47,7 +47,7 @@ for attempt in range(max_retries):
         response = await client.send_cmd(command)
         logger.info(f"执行命令: {command}, 响应: {response}")
         return response if response else "命令执行成功（无返回信息）"
-    except (ConnectionRefusedError, ConnectionResetError, BrokenPipeError, OSError) as e:
+    except TRANSIENT_RCON_ERRORS as e:  # 定义见 rcon_client.py:17-25
         logger.warning(f"RCON连接异常 (尝试 {attempt + 1}/{max_retries}): {e}")
         await self._reconnect()
         if attempt == max_retries - 1:
@@ -64,8 +64,10 @@ for attempt in range(max_retries):
 `try`。
 
 注意：aiomcrcon 的 `send_cmd` 实际返回 `tuple[str, int]`（响应文本 + 请求 ID），`execute_async` 成功分支
-必须用 `isinstance(response, tuple)` 解包取 `[0]`（rcon_client.py:73-77）。2026-10 之前没解包，元组被
-f-string 插值成 `"('...', 5)"` 脏文本；任何对返回值调 str 方法（如 `startswith`）的代码都会直接炸。成功且无输出时返回"命令执行成功（无返回信息）"，所以**不要用真假值判断成败**，要看 `错误:` 前缀。
+必须用 `isinstance(response, tuple)` 解包取 `[0]`（rcon_client.py:91-95）。2026-10 之前没解包，元组被
+f-string 插值成 `"('...', 5)"` 脏文本；任何对返回值调 str 方法（如 `startswith`）的代码都会直接炸。成功且无输出时返回"命令执行成功（无返回信息）"，所以**不要用真假值判断成败**，要看 `错误:` 前缀。连接类异常
+（`RCONConnectionError`/`ClientNotConnectedError`/`struct.error`）已纳入断开重连后重试
+（rcon_client.py:12-25）；其他异常仍立即返回错误串。
 
 ### B. 参数校验失败：直接返回错误串，不发命令（`tools/world_tools.py:58-59`）
 
@@ -74,7 +76,7 @@ if weather_type not in ["clear", "rain", "thunder"]:
     return f"错误: 无效的天气类型 '{weather_type}'，可选值：clear、rain、thunder"
 ```
 
-### C. 危险命令闸门：配置开关 + 命令白名单（`tools/server_tools.py:203-213`）
+### C. 危险命令闸门：配置开关 + 命令白名单（`tools/server_tools.py:90-94`）
 
 ```python
 dangerous_commands = ["stop", "ban-ip"]
@@ -84,7 +86,7 @@ if cmd_base in dangerous_commands and not _enable_dangerous_commands:
     return f"错误: 命令 '{cmd_base}' 是危险命令，已被禁用。"
 ```
 
-### D. 事件管线边界：整段 try/except + 只记日志（`main.py:200-259`、`:261-313`、`:337-382`）
+### D. 事件管线边界：整段 try/except + 只记日志（`main.py:243-304`、`:306-358`、`:429-447`）
 
 ```python
 async def _send_fake_event(self, player: str, message: str):
@@ -94,9 +96,9 @@ async def _send_fake_event(self, player: str, message: str):
         logger.error(f"提交MC消息失败: {e}")
 ```
 
-这些方法是日志回调，由 `LogClient` 用 `create_task` 调度；必须自己吞异常并记录。
+这些方法是日志回调，由 `LogWatcher` 用 `create_task` 调度；必须自己吞异常并记录。
 
-### E. 资源清理：允许裸 `except:`（`rcon_client.py:51/162/175`、`log_client.py:145`、`log_server.py:126/244/272`）
+### E. 资源清理：允许裸 `except:`（`rcon_client.py:66/132/145`）
 
 ```python
 try:
@@ -117,8 +119,8 @@ except:
 | 场景 | 格式 | 例子 |
 |---|---|---|
 | tools 层失败 | `错误: <中文原因>，可选值：...` | `错误: 无效的天气类型 'snow'，可选值：clear、rain、thunder` |
-| 权限不足 | `权限不足：用户 <id> 不在管理员列表中` | `main.py:482-484` |
-| 危险命令被禁用 | `错误: 命令 '<cmd>' 是危险命令，已被禁用。` | `tools/server_tools.py:210` |
+| 权限不足 | `权限不足：用户 <id> 不在管理员列表中` | `main.py:485` |
+| 危险命令被禁用 | `错误: 命令 '<cmd>' 是危险命令，已被禁用。` | `tools/server_tools.py:94` |
 | 处理成功 | `<做了什么>: <RCON 原始响应>` | `给予 Steve 5个 minecraft:diamond: Given ...` |
 | 功能未启用 | `❌ 未启用统一上下文功能(enable_unified_context)...` | `main.py` `tool_send_to_qq_group` |
 

@@ -18,9 +18,9 @@
 |---|---|---|
 | 白名单 / OP / 封禁 | MC 服务器的 `whitelist.json`、`ops.json`、`banned-players.json` | 经 `execute_command` 发 `whitelist add`、`op`、`ban` 等命令，**不直接改文件** |
 | 世界数据 | MC 服务器 `world/` 目录 | 经 `execute_command` 发 `save-all` |
-| 插件配置（RCON 地址、管理员、各类开关） | AstrBot 配置系统，schema 在 `_conf_schema.json` | 启动时 `self.config.get("key", default)`，只读 |
-| 运行态（日志连接、重连计数） | 进程内存 | 实例/模块属性，如 `LogClient` 的重连计数（`log_client.py`） |
-| 对话上下文 | AstrBot 的 LTM / 事件管线 | 用 `StarTools.create_event` 投递事件（`main.py:247-251`），插件自己不存 |
+| 插件配置（RCON 地址、管理员、各类开关） | AstrBot 配置系统，schema 在 `_conf_schema.json` | 启动时 `self.config.get("key", default)`；mc绑定/mc解绑 改写 unified_group_umo 后 `config.save_config()` |
+| 运行态（日志读取位置、缺失轮数、喊话冷却） | 进程内存 | 实例属性，如 `LogWatcher` 的读取位置（`log_watcher.py`） |
+| 对话上下文 | AstrBot 的 LTM / 事件管线 | 用 `StarTools.create_event` 投递事件（`main.py:295/349`），插件自己不存 |
 
 ---
 
@@ -30,8 +30,8 @@
 
 - **读状态用命令，不用文件。** 想知道谁在线就 `list`（`tools/server_tools.py` `list_players`），想知道白名单就
   经 `execute_command` 发 `whitelist list`，不要 `open("whitelist.json")`。
-- **解析文本响应时**，解析逻辑放在调用侧并做兜底。范例：`rcon_client.py:104-132` 对 `list` 响应的解析
-  （含格式不符时返回 `(0, [])`），但该函数目前是死代码，见 quality-guidelines "已知债务"。
+- **解析文本响应时**，解析逻辑放在调用侧并做兜底。范例：`tools/server_tools.py:39-48` 的 `list_players`
+  把 `list` 的原始响应直接包进中文结果，不在 RCON 层做假设性解析。
 - **批量操作** 用一条命令的目标选择器（`@a`、`@e[type=zombie]`），不要循环发 RCON；超过 2-3 条命令的
   多步任务由 AstrBot 的多轮工具调用或电脑使用能力（computer_use_runtime）承接（脚本执行器已删除）。
 
@@ -83,4 +83,4 @@
   （见「例外」节），别拿它当先例去存别的东西。
 - 直接在插件里读写 MC 的 `whitelist.json`：服务器运行中有内存态，改文件会被覆盖（要 `whitelist reload`）。
 - 把管理员列表、RCON 密码写进代码常量。必须走 `_conf_schema.json` + `config.get`。
-- 以为 `terminate()` 会落盘状态——它只断开日志连接（`main.py:316-322`）。
+- 以为 `terminate()` 会落盘状态——它只停止日志监听并关闭 RCON 连接（`main.py:361-368`）。

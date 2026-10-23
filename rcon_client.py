@@ -5,9 +5,24 @@ Minecraft RCON客户端封装
 """
 
 import asyncio
+import struct
 from aiomcrcon import Client
+from aiomcrcon.errors import ClientNotConnectedError, RCONConnectionError
 from typing import Optional
 from astrbot.api import logger
+
+
+# 值得断开重连后重试的异常：aiomcrcon 的连接错误不是 OSError 子类，必须显式列出；
+# struct.error 是连接已断时读到空包的表现（停服/重启后首条命令）。
+TRANSIENT_RCON_ERRORS = (
+    ConnectionRefusedError,
+    ConnectionResetError,
+    BrokenPipeError,
+    OSError,
+    RCONConnectionError,
+    ClientNotConnectedError,
+    struct.error,
+)
 
 
 class MinecraftRCON:
@@ -77,7 +92,7 @@ class MinecraftRCON:
                     response = response[0]
                 logger.info(f"执行命令: {command}, 响应: {response}")
                 return response if response else "命令执行成功（无返回信息）"
-            except (ConnectionRefusedError, ConnectionResetError, BrokenPipeError, OSError) as e:
+            except TRANSIENT_RCON_ERRORS as e:
                 logger.warning(f"RCON连接异常 (尝试 {attempt + 1}/{max_retries}): {e}")
                 await self._reconnect()
                 if attempt == max_retries - 1:

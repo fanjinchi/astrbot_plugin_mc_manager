@@ -19,6 +19,11 @@ from .kb import KnowledgeBase
 from .kb import commands as cmd_kb
 
 
+# _send_fake_event / _send_system_event 伪造事件的 self_id：用于识别“来自 MC 聊天”的伪造事件，
+# 防止游戏内聊天触发 QQ 侧的绑定/喊话命令
+FAKE_EVENT_SELF_ID = "astrbot_mc_plugin"
+
+
 @register(
     name="mc_manager",
     desc="通过LLM智能管理Minecraft服务器",
@@ -160,6 +165,11 @@ class MCManagerPlugin(Star):
         except Exception:
             pass
         return "aiocqhttp"
+
+    @staticmethod
+    def _is_mc_fake_event(event: AstrMessageEvent) -> bool:
+        """是否为插件从 MC 聊天伪造的事件（这类事件不允许触发 QQ 侧命令）"""
+        return event.get_self_id() == FAKE_EVENT_SELF_ID
     
     async def _forward_to_bound_group(self, text: str):
         """
@@ -269,7 +279,7 @@ class MCManagerPlugin(Star):
             # 创建新消息对象
             new_message = await StarTools.create_message(
                 type="GroupMessage",
-                self_id="astrbot_mc_plugin",
+                self_id=FAKE_EVENT_SELF_ID,
                 session_id=mc_session_id,
                 sender=sender,
                 message=[Plain(message_text)],
@@ -327,7 +337,7 @@ class MCManagerPlugin(Star):
             # 创建系统消息对象
             new_message = await StarTools.create_message(
                 type="GroupMessage",
-                self_id="astrbot_mc_plugin",
+                self_id=FAKE_EVENT_SELF_ID,
                 session_id=mc_session_id,
                 sender=sender,
                 message=[Plain(event_message)],
@@ -693,6 +703,10 @@ class MCManagerPlugin(Star):
     @filter.command("mc绑定")
     async def cmd_bind_group(self, event: AstrMessageEvent):
         """把当前QQ群绑定为MC消息转发目标（管理员）"""
+        if self._is_mc_fake_event(event):
+            yield event.plain_result("❌ 该命令只能在QQ群内使用")
+            return
+
         has_permission, error_msg = self._check_permission(event)
         if not has_permission:
             yield event.plain_result(error_msg)
@@ -713,14 +727,23 @@ class MCManagerPlugin(Star):
             yield event.plain_result(f"❌ 绑定已生效但保存配置失败（重启后失效）: {e}")
             return
         
+        bridge_hint = (
+            f"游戏内以 {self.mc_bridge_prefix} 开头的聊天"
+            if self.mc_bridge_prefix
+            else "游戏内聊天"
+        )
         yield event.plain_result(
             f"✓ 已绑定本群为MC消息转发目标（平台: {event.get_platform_name()}）\n"
-            "游戏内聊天与系统事件将推送到本群；发送 mc解绑 可解除。"
+            f"{bridge_hint}与系统事件将推送到本群；发送 mc解绑 可解除。"
         )
 
     @filter.command("mc解绑")
     async def cmd_unbind_group(self, event: AstrMessageEvent):
         """解除MC消息转发群的绑定（管理员）"""
+        if self._is_mc_fake_event(event):
+            yield event.plain_result("❌ 该命令只能在QQ群内使用")
+            return
+
         has_permission, error_msg = self._check_permission(event)
         if not has_permission:
             yield event.plain_result(error_msg)
@@ -744,7 +767,11 @@ class MCManagerPlugin(Star):
     @filter.command("mc喊话")
     async def cmd_shout_to_mc(self, event: AstrMessageEvent):
         """把消息发送到MC游戏内聊天（限绑定群，同一人 5 秒冷却）"""
-        # 喊话是聊天桥的一部分，只在绑定群可用，避免 bot 所在任意群都能往公屏说话
+        # 喊话是聊天桥的一部分，只在绑定群可用，避免 bot 所在任意群都能往公屏说话；
+        # 同时拒绝 MC 聊天伪造的事件，避免游戏内 #mc喊话 被当成群喊话再 tellraw 回游戏
+        if self._is_mc_fake_event(event):
+            yield event.plain_result("❌ 该命令只能在QQ群内使用")
+            return
         if not self.unified_group_umo:
             yield event.plain_result("❌ 未绑定MC互通群，请管理员先在目标群发送 mc绑定")
             return
