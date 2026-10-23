@@ -17,7 +17,7 @@ import re
 import time
 import urllib.request
 import zipfile
-from typing import Optional, Tuple
+from typing import Optional
 
 _RELEASES_API = "https://api.github.com/repos/CFPAOrg/Minecraft-Mod-Language-Package/releases/latest"
 _MIRROR_DIR = "https://bmclapi2.bangbang93.com/mirrors/i18n-update-mod/"
@@ -35,7 +35,7 @@ _GENERIC_MAJORS = {"1.6", "1.16", "1.18", "1.19", "1.20", "1.21", "26.1"}
 _UNSUPPORTED = {"1.13", "1.14", "1.15", "1.17"}
 
 
-def package_names(version: str) -> Optional[Tuple[str, str]]:
+def package_names(version: str) -> Optional[tuple[str, str]]:
     """返回 (zip 名, md5 名)；该版本没有 CFPA 包时返回 None。"""
     v = (version or "").strip()
     if not v:
@@ -181,7 +181,7 @@ def _manual_zips(cache_dir):
     )
 
 
-def fetch_zip(version: str, data_dir: str, allow_download: bool = True, log=None) -> Tuple[str, dict]:
+def fetch_zip(version: str, data_dir: str, allow_download: bool = True, log=None) -> tuple[str, dict]:
     """取 CFPA zip：数据目录里的手动包优先，其次按版本下载。返回 (路径, 信息) 或 (None, {})。"""
     log = log or (lambda msg: None)
     cache_dir = os.path.join(data_dir, "cfpa")

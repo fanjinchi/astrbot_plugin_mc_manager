@@ -9,7 +9,8 @@ import json
 import os
 import sqlite3
 from contextlib import contextmanager
-from typing import Any, Dict, Iterable, List, Optional
+from collections.abc import Iterable
+from typing import Any, Optional
 
 SCHEMA_VERSION = 1
 
@@ -54,7 +55,7 @@ def is_built(db_path: str) -> bool:
         return False
 
 
-def write(db_path: str, rows: Iterable[Dict[str, Any]], meta: Dict[str, Any]):
+def write(db_path: str, rows: Iterable[dict[str, Any]], meta: dict[str, Any]):
     """全量重建：单事务内 DELETE + executemany，重复重建不会长出重复行。"""
     os.makedirs(os.path.dirname(os.path.abspath(db_path)) or ".", exist_ok=True)
     with _connect(db_path) as conn:
@@ -86,7 +87,7 @@ def write(db_path: str, rows: Iterable[Dict[str, Any]], meta: Dict[str, Any]):
         conn.commit()
 
 
-def load_meta(db_path: str) -> Optional[Dict[str, Any]]:
+def load_meta(db_path: str) -> Optional[dict[str, Any]]:
     """读取 meta 表；库不存在或为空返回 None。"""
     if not os.path.isfile(db_path):
         return None
@@ -97,7 +98,7 @@ def load_meta(db_path: str) -> Optional[Dict[str, Any]]:
         return None
     if not rows:
         return None
-    out: Dict[str, Any] = {}
+    out: dict[str, Any] = {}
     for key, value in rows:
         try:
             out[key] = json.loads(value)
@@ -106,7 +107,7 @@ def load_meta(db_path: str) -> Optional[Dict[str, Any]]:
     return out
 
 
-def search(db_path: str, keyword: str, limit: int = 10) -> List[Dict[str, Any]]:
+def search(db_path: str, keyword: str, limit: int = 10) -> list[dict[str, Any]]:
     """中文名 / 英文名 / 完整 ID 模糊搜索，排序：完全匹配 > 前缀 > 包含。"""
     kw = (keyword or "").strip()
     if not kw:
