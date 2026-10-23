@@ -101,8 +101,9 @@ recipe.jsonl  6231 行  <- 5805 条 inputs+outputs 齐全（必须用 Ingredient
 
 - Farming：207 个 namespace 有 en_us，只有 155 个有 zh_cn（53 个纯英文：bf_blockpack 1203、cluttered 1031、paintable 999...）
 - zyjd：139 有 en_us vs 102 有 zh_cn
-- **最大硬伤是原版**：服务端安装里没有 client jar（find libraries -name '*client*.jar' 为空），1,088~1,298 个 minecraft: id 里只有约 199 个有中文，minecraft:diamond_sword 这种最常用的反而查不到。
-  -> **必须内置一份原版 1.20.1 zh_cn.json（约 6,000 条常量表）**，与整合包无关。
+- **最大硬伤是原版（已更正，见 research/07）**：服务端安装里没有 client jar，扫描出的 1,088~1,298 个 minecraft: id 里只有约 199 个有中文，minecraft:diamond_sword 这种最常用的反而查不到。
+  -> 但 Forge 的 `libraries/net/minecraft/server/*/server-<ver>-extra.jar` 里**自带官方 en_us.json**（386,499 B / 6,217 条），可离线还原 1,369 个原版 ID + 英文名（精度 100%、召回 97.6%、耗时 0.11 s）；中文只需 385 KB 的官方 zh_cn.json（运行时下载或服主自备）。
+  -> **不需要内置常量表**；早期"必须内置"的结论作废（内置还违反 Mojang EULA 的再分发限制）。
 
 已排除的两个假线索：
 - Farming/hotai/ **不是**翻译覆盖，是 ModLauncher ITransformationService + org.badiff 二进制类补丁（79 个 .badiff、245KB，strings 与 grep -P '\p{Han}' 全空）。
@@ -234,7 +235,7 @@ give_item / summon_entity 内部先调 search_item 解析，再执行。
 **阶段 1（最小可用，1~2 天）**
 1. 独立 CLI：扫 mods/ -> 生成 knowledge.sqlite（可复用 .research/prototype/scan_items.py 与 .research/artifacts/load_sqlite.py）
 2. 内置原版 zh_cn.json 常量表
-3. 新增 search_item 工具 + 修掉三处硬编码前缀
+3. 新增 search_item 工具 + 修掉四处硬编码前缀（含 fill_blocks）
 4. 配置项：知识库路径、是否启用
 
 **阶段 2（配方）**

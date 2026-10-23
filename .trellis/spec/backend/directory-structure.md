@@ -33,11 +33,23 @@ astrbot_plugin_mc_manager/
 ├── log_server.py           # LogServer：tail latest.log → 广播；独立进程运行
 ├── script_executor.py      # ScriptExecutor：exec 脚本、捕获 print、超时取消
 ├── tools/
-│   ├── __init__.py         # 显式导出四个模块（不用星号导入）
+│   ├── __init__.py         # 显式导出四个子模块（不用星号导入）
+│   ├── id_utils.py         # normalize_mc_id()：资源 ID 归一化（无命名空间才补 minecraft:）
 │   ├── player_tools.py     # kick / ban / pardon / op / deop / whitelist
 │   ├── game_tools.py       # give / tp / gamemode / kill / clear / xp
 │   ├── server_tools.py     # list / say / tellraw / title / save / banlist / execute_command + 危险命令开关
 │   └── world_tools.py      # weather / time / difficulty / gamerule / summon / fill / setspawn
+├── kb/                     # 物品知识库（mods/*.jar 的派生缓存，可整体删除重建）
+│   ├── __init__.py         # KnowledgeBase 门面：rebuild / search / status
+│   ├── scanner.py          # 离线扫 mods/*.jar + kubejs/：ID、中英文名、mod 归属
+│   ├── vanilla.py          # 原版：en_us 取 ID/英文名，zh_cn 按优先级取；方块能否 give
+│   ├── cfpa.py             # CFPA 汉化包：按版本选包、下载（GitHub→BMCLAPI）、md5 校验、解析
+│   ├── builder.py          # 编排扫描→原版→CFPA→自定义→dump→落库→统计
+│   ├── store.py            # SQLite schema + 读写（每次操作各自连接）
+│   └── query.py            # 查询/回执/状态的对外文案
+├── assets/
+│   ├── runtime_dump.js         # KubeJS 运行时注册表导出脚本（可选增强）
+│   └── extract_runtime_dump.py # 日志里的 ##RD## 行 -> runtime_dump/*.jsonl
 ├── _conf_schema.json       # AstrBot WebUI 配置 schema（配置项唯一来源）
 ├── metadata.yaml           # 插件元信息（name/desc/author/version/repo）
 ├── requirements.txt        # 运行时依赖，目前只有 aio-mc-rcon
@@ -66,6 +78,7 @@ astrbot_plugin_mc_manager/
 |---|---|
 | 新增一条 MC 命令能力 | `tools/` 最接近的模块加 `async def`，再在 `main.py` 包一层 `@filter.llm_tool` |
 | 新增一个 LLM 工具 | `main.py` 的 `tool_*`；实现下沉到 `tools/` |
+| 新增知识库能力（扫新来源/新查询） | `kb/` 对应模块；装配仍只在 `main.py` |
 | 新增配置项 | `_conf_schema.json` + `main.py.__init__` 里 `self.config.get(...)` |
 | 新增 MC 日志事件 | `log_client.py` 加 `*_PATTERN` 常量 + 回调字段 + `set_*_callback` + `_process_log_line` 分支；`main.py` 加 `_on_*` 并用 `_send_system_event` 上报 |
 | 新增对外指令 | `main.py` 的 `@filter.command`（`test_connection`、`test_log` 是范例） |

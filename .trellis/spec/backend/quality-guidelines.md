@@ -70,8 +70,7 @@ async def give_item(player: str, item: str, count: int = 1) -> str:
         ...
     """
     rcon = get_rcon()
-    if not item.startswith("minecraft:"):
-        item = f"minecraft:{item}"
+    item = normalize_mc_id(item)   # 无命名空间才补 minecraft:，模组 ID 原样保留
     count = max(1, min(count, 64))
     result = await rcon.execute_async(f"give {player} {item} {count}")
     return f"给予 {player} {count}个 {item}: {result}"
@@ -80,10 +79,17 @@ async def give_item(player: str, item: str, count: int = 1) -> str:
 同样的 docstring 格式（因为 `ScriptExecutor` 把它们当脚本文档展示，`list_script_tools` 取第一行）；
 参数归一化 + 边界钳制在发命令前做；返回"做了什么 + RCON 原始响应"。
 
+资源 ID 归一化统一用 `tools/id_utils.py` 的 `normalize_mc_id()`：**只在没有命名空间分隔符时补
+`minecraft:`**，`thermal:tin_ingot` 这类模组完整 ID 必须原样通过。不要再写
+`if not x.startswith("minecraft:")`——那会把模组 ID 变成 `minecraft:thermal:tin_ingot`。
+
 ### 3. 权限
 
 `_check_permission` 先行，返回 `(bool, 错误文案)`。免检只读工具必须能在 `grep -n "无需权限"` 里查到，
-新增免检项要在这里列名。
+新增免检项要在这里列名。当前 5 个：`list_players`、`whitelist_list`、`banlist`、`list_script_tools`、
+`search_mc_items`（后两个是知识库/脚本文档查询）。
+
+`@filter.command` 指令默认也要权限检查（知识库的 `mc_kb_rebuild` / `mc_kb_status` 都是管理员指令）。
 
 ### 4. 异步纪律
 

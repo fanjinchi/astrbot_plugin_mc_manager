@@ -140,9 +140,9 @@ except:
   `错误:` 前缀；用前缀判断，别用真假值。
 - **给整个 LLM 工具再包一层 try/except 兜底。** 现有代码不这样做（靠 execute_async 不抛），重复兜底只会
   丢堆栈、把可定位的 bug 变成"未知错误"。
-- **忘记权限检查。** 新工具默认必须 `_check_permission`；免检只有 4 个只读工具：
-  `list_players`（`main.py:675`）、`whitelist_list`（`:733`）、`banlist`（`:738`）、
-  `list_script_tools`（`:869`）。
+- **忘记权限检查。** 新工具默认必须 `_check_permission`；免检只有 5 个只读工具：
+  `list_players`、`whitelist_list`、`banlist`、`list_script_tools`、`search_mc_items`（物品知识库查询）。
+  知识库的 `mc_kb_rebuild` / `mc_kb_status` 是管理员指令，同样走 `_check_permission`。
 - **依赖 `is_admin()` 的返回类型。** `main.py:468-490` 声明 `-> bool`，但非管理员路径走完分支隐式返回
   `None`；`if not self.is_admin(...)` 靠假值侥幸成立。新代码不要依赖它返回严格 bool（修的时候补
   `return False`，见 quality-guidelines 已知债务）。

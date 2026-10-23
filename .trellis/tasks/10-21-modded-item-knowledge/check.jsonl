@@ -2,3 +2,5 @@
 {"file": ".trellis/tasks/10-21-modded-item-knowledge/research/05-synthesis.md", "reason": "真实数字对照"}
 {"file": "tools/game_tools.py", "reason": "回归检查：命令拼装"}
 {"file": "tools/world_tools.py", "reason": "回归检查：命令拼装"}
+{"file": ".trellis/spec/backend/quality-guidelines.md", "reason": "review 清单、免检工具、装配登记"}
+{"file": ".trellis/spec/backend/database-guidelines.md", "reason": "检查是否按例外约定更新"}

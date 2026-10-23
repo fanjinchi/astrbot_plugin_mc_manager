@@ -2,6 +2,13 @@
 {"file": ".trellis/tasks/10-21-modded-item-knowledge/research/01-static-item-extraction.md", "reason": "key→id 规则、三坑、多信源合并与扫描原型结果"}
 {"file": ".trellis/tasks/10-21-modded-item-knowledge/research/06-cfpa-i18n-pack.md", "reason": "CFPA 汉化包下载源、zip 结构、key 形态与许可证"}
 {"file": ".trellis/tasks/10-21-modded-item-knowledge/research/02-runtime-dump.md", "reason": "KubeJS 运行时 dump 机制与命令面实测"}
-{"file": "main.py", "reason": "llm_tool 注册方式与权限体系"}
 {"file": "tools/game_tools.py", "reason": "give_item / clear_inventory 硬编码 bug 位置"}
-{"file": "tools/world_tools.py", "reason": "summon_entity 硬编码 bug 位置"}
+{"file": "tools/world_tools.py", "reason": "summon_entity / fill_blocks 硬编码 bug 位置"}
+{"file": ".trellis/spec/backend/index.md", "reason": "spec 索引与改动前先读哪个"}
+{"file": ".trellis/spec/backend/quality-guidelines.md", "reason": "LLM 工具契约、免检工具登记、验证方式、提交约定"}
+{"file": ".trellis/spec/backend/directory-structure.md", "reason": "新包 kb/ 放哪、三层职责与依赖方向"}
+{"file": ".trellis/spec/backend/error-handling.md", "reason": "错误面与返回值格式、失败提示文案"}
+{"file": ".trellis/spec/backend/database-guidelines.md", "reason": "数据库约定；本任务需补'可重建派生缓存'的例外"}
+{"file": ".trellis/tasks/10-21-modded-item-knowledge/research/07-vanilla-lang-options.md", "reason": "原版 en_us 提取、许可判定、zh_cn 下载链路与 ID 还原口径"}
+{"file": ".trellis/tasks/10-21-modded-item-knowledge/research/08-zh-coverage.md", "reason": "覆盖率实测门槛、kubejs 资源包层、CFPA 过滤剔除数"}
+{"file": ".trellis/tasks/10-21-modded-item-knowledge/research/07a-client-asset-probe.md", "reason": "客户端 assets 取原版中文与方块物品模型判定"}
