@@ -739,9 +739,13 @@ class MCManagerPlugin(Star):
             if self.mc_bridge_prefix
             else "游戏内聊天"
         )
+        if self.enable_system_event_forward:
+            push_desc = f"{bridge_hint}与系统事件将推送到本群"
+        else:
+            push_desc = f"{bridge_hint}将推送到本群（系统事件推送已在配置中关闭）"
         yield event.plain_result(
             f"✓ 已绑定本群为MC消息转发目标（平台: {event.get_platform_name()}）\n"
-            f"{bridge_hint}与系统事件将推送到本群；发送 mc解绑 可解除。"
+            f"{push_desc}；发送 mc解绑 可解除。"
         )
 
     @filter.command("mc解绑")
