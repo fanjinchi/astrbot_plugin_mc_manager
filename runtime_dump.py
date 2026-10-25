@@ -1,8 +1,8 @@
 """运行时 dump 一键化：部署 KubeJS 脚本 → RCON 触发 → 解析命令反馈 → 重建知识库。
 
 完成判定用「命令反馈」而不是标记文件：Minecraft 的 RCON 会阻塞到命令执行结束，并把
-RconConsoleSource 的命令反馈随响应一起回传（证据见 tasks/10-23-runtime-dump-oneclick/
-research/01-rcon-trigger.md §1）。因此「触发」与「完成判定」是同一次 RCON 调用。
+RconConsoleSource 的命令反馈随响应一起回传（证据见 tasks/archive/2026-10/
+10-23-runtime-dump-oneclick/research/01-rcon-trigger.md §1）。因此「触发」与「完成判定」是同一次 RCON 调用。
 """
 
 import asyncio

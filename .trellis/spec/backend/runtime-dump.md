@@ -1,7 +1,7 @@
 # Runtime Dump Contract
 
 > 交叉契约：KubeJS 产物 ↔ RCON 完成信号 ↔ 插件编排 ↔ builder 读取。改动任一段都要同步其它段。
-> 实测与证据：`.trellis/tasks/10-23-runtime-dump-oneclick/research/01-rcon-trigger.md`（任务归档后仍在）。
+> 实测与证据：`.trellis/tasks/archive/2026-10/10-23-runtime-dump-oneclick/research/01-rcon-trigger.md`。
 
 ## 1. Scope / Trigger
 
