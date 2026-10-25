@@ -139,81 +139,117 @@ def _dump_id(raw) -> str:
     return raw if _ID_RE.match(raw) else ""
 
 
-def _load_runtime_dumps(server_dir: str, data_dir: str, rows) -> dict:
-    """合并 <服务端>/runtime_dump 与 <数据目录>/runtime_dump 下的 jsonl（同名取 mtime 新）。"""
+def _read_dump_objects(path: str):
+    """读一个 dump 文件，返回条目对象列表；不是 dump 数据时返回 None（静默跳过）。
+
+    .json 是 KubeJS JsonIO 直写的 {kind,count,entries}（整文件解析，截断/损坏会抛异常，
+    由调用方记 warning 并跳过该文件）；.jsonl 是旧格式，按行解析、坏行跳过。
+    """
+    if path.lower().endswith(".jsonl"):
+        objs = []
+        with open(path, encoding="utf-8", errors="replace") as fh:
+            for line in fh:
+                line = line.strip()
+                if not line:
+                    continue
+                try:
+                    objs.append(json.loads(line))
+                except Exception:
+                    continue
+        return objs
+    with open(path, encoding="utf-8", errors="replace") as fh:
+        data = json.load(fh)
+    if isinstance(data, dict) and isinstance(data.get("entries"), list):
+        return data["entries"]
+    return None
+
+
+def _load_runtime_dumps(server_dir: str, data_dir: str, rows, warnings) -> dict:
+    """合并 <服务端>/runtime_dump 与 <数据目录>/runtime_dump 下的 dump 文件。
+
+    .json（JsonIO 产物）优先于同名 .jsonl（旧格式）；单文件容错：损坏/截断只跳过该文件。
+    """
     info = {"files": 0, "new": 0, "updated": 0, "has_item": 0}
     files = {}
     for d in (os.path.join(server_dir, "runtime_dump"), os.path.join(data_dir, "runtime_dump")):
         if not os.path.isdir(d):
             continue
         for fn in os.listdir(d):
-            if not fn.lower().endswith(".jsonl"):
+            lower = fn.lower()
+            if lower.startswith("_") or not (lower.endswith(".json") or lower.endswith(".jsonl")):
                 continue
             p = os.path.join(d, fn)
-            if os.path.getsize(p) == 0:
+            try:
+                if os.path.getsize(p) == 0:
+                    if lower.endswith(".json"):
+                        warnings.append("runtime_dump 文件为空，已跳过：%s" % os.path.basename(p))
+                    continue
+                is_json = lower.endswith(".json")
+                stem = lower[:-5] if is_json else lower[:-6]
+                rank = 1 if is_json else 0
+                prev = files.get(stem)
+                if (prev is None or rank > prev[0]
+                        or (rank == prev[0] and os.path.getmtime(p) > os.path.getmtime(prev[1]))):
+                    files[stem] = (rank, p)
+            except OSError:
                 continue
-            if fn not in files or os.path.getmtime(p) > os.path.getmtime(files[fn]):
-                files[fn] = p
     if not files:
         return info
     dump_items, dump_blocks = set(), set()
-    for fn, path in files.items():
-        stem = fn[:-6].lower()
+    for stem, (_rank, path) in sorted(files.items()):
         default_kind = stem if stem in _DUMP_KINDS else ""
         try:
-            fh = open(path, encoding="utf-8", errors="replace")
-        except OSError:
+            objects = _read_dump_objects(path)
+        except Exception as e:
+            warnings.append("runtime_dump 文件解析失败，已跳过：%s（%s）"
+                            % (os.path.basename(path), e))
+            continue
+        if objects is None:  # 不是 dump 数据（没有 entries），静默跳过
             continue
         info["files"] += 1
-        with fh:
-            for line in fh:
-                line = line.strip()
-                if not line:
-                    continue
-                try:
-                    obj = json.loads(line)
-                except Exception:
-                    continue
-                row_id = _dump_id(obj.get("id"))
-                if not row_id:
-                    continue
-                kind = obj.get("kind") or default_kind
-                if kind not in _DUMP_KINDS:
-                    continue
-                resolved = obj.get("resolved") if isinstance(obj.get("resolved"), str) else ""
-                row = rows.get(row_id)
-                if row is None:
-                    ns, _, path_part = row_id.partition(":")
-                    row = rows[row_id] = {
-                        "id": row_id,
-                        "namespace": ns,
-                        "path": path_part,
-                        "kind": kind,
-                        "kinds": {kind},
-                        "sources": {"dump"},
-                        "name_en": resolved or None,
-                        "name_zh": None,
-                        "zh_source": None,
-                        "zh_layers": set(),
-                        "en_layers": {"dump"} if resolved else set(),
-                        "mod_name": None,
-                        "cross_ref": False,
-                        "origin": "dump",
-                        "has_item": None,
-                        "has_item_guess": 0,
-                    }
-                    info["new"] += 1
-                else:
-                    info["updated"] += 1
-                    row["kinds"].add(kind)
-                    # 不重算 kind：保留扫描/原版已定的主类型（egg/arrow 这类同 ID 投射物保持 item）
-                    if resolved:
-                        row["name_en"] = resolved
-                        row["en_layers"].add("dump")
-                if kind == "item":
-                    dump_items.add(row_id)
-                elif kind == "block":
-                    dump_blocks.add(row_id)
+        for obj in objects:
+            if not isinstance(obj, dict):
+                continue
+            row_id = _dump_id(obj.get("id"))
+            if not row_id:
+                continue
+            kind = obj.get("kind") or default_kind
+            if kind not in _DUMP_KINDS:
+                continue
+            resolved = obj.get("resolved") if isinstance(obj.get("resolved"), str) else ""
+            row = rows.get(row_id)
+            if row is None:
+                ns, _, path_part = row_id.partition(":")
+                row = rows[row_id] = {
+                    "id": row_id,
+                    "namespace": ns,
+                    "path": path_part,
+                    "kind": kind,
+                    "kinds": {kind},
+                    "sources": {"dump"},
+                    "name_en": resolved or None,
+                    "name_zh": None,
+                    "zh_source": None,
+                    "zh_layers": set(),
+                    "en_layers": {"dump"} if resolved else set(),
+                    "mod_name": None,
+                    "cross_ref": False,
+                    "origin": "dump",
+                    "has_item": None,
+                    "has_item_guess": 0,
+                }
+                info["new"] += 1
+            else:
+                info["updated"] += 1
+                row["kinds"].add(kind)
+                # 不重算 kind：保留扫描/原版已定的主类型（egg/arrow 这类同 ID 投射物保持 item）
+                if resolved:
+                    row["name_en"] = resolved
+                    row["en_layers"].add("dump")
+            if kind == "item":
+                dump_items.add(row_id)
+            elif kind == "block":
+                dump_blocks.add(row_id)
     # 运行时注册表是权威：item 注册表里有 = 可 give；只有 block = 不可 give
     for row_id in dump_items:
         rows[row_id]["has_item"] = 1
@@ -367,7 +403,7 @@ def rebuild(server_dir: str, data_dir: str, db_path: Optional[str] = None, mc_ve
     extra_info = _apply_extra(rows, data_dir, warnings)
 
     # 5) 运行时 dump（权威）
-    dump_info = _load_runtime_dumps(server_dir, data_dir, rows)
+    dump_info = _load_runtime_dumps(server_dir, data_dir, rows, warnings)
     kubejs_hint = os.path.isdir(os.path.join(server_dir, "kubejs")) and not dump_info.get("files")
     for row in rows.values():
         if row["namespace"] == "minecraft" and not row.get("mod_name"):

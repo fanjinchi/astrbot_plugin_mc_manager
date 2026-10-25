@@ -1,5 +1,5 @@
 name: astrbot_plugin_mc_manager
 description: 通过在QQ群或私聊与bot对话，智能管理Minecraft服务器，支持Fabric/Forge/NeoForge
 author: Jason.Joestar
-version: 1.4.0
+version: 1.5.0
 repo: https://github.com/fanjinchi/astrbot_plugin_mc_manager

@@ -1,88 +1,103 @@
-// 物品知识库运行时 dump 增强脚本（KubeJS，Forge/NeoForge 1.20.1 实测）
-// 用法：
-//   1) 复制本文件到 <mc_server_dir>/kubejs/server_scripts/，重启或 /reload
-//   2) 进服执行 /researchdump —— 结果以 "##RD##" 前缀写入服务器日志 logs/latest.log
-//   3) 执行 python3 assets/extract_runtime_dump.py <mc_server_dir>/logs/latest.log <mc_server_dir>/runtime_dump
-//   4) /mc_kb_rebuild 重建时会自动合并 runtime_dump/*.jsonl（运行时注册表是权威数据）
+// 物品知识库运行时 dump 脚本（KubeJS；Minecraft 1.19.2 实测，1.20.1+ 兼容）
 //
-// 说明：脚本只导出物品/方块/实体/流体注册表，每次执行会把全量条目写进日志（几万行），
-// 完成后建议 /reload 或重启去掉本脚本，避免以后日志里再出现 ##RD## 行。
+// 用法（手工四步；插件 /mc_kb_dump 会自动完成前两步并触发第 3 步）：
+//   1) mkdir -p <mc_server_dir>/runtime_dump      —— KubeJS 的 JsonIO 不会自动建父目录
+//   2) 复制本文件到 <mc_server_dir>/kubejs/server_scripts/，然后重启服务器或执行 /reload
+//   3) 游戏内 OP（权限等级 ≥2）或控制台执行 /researchdump
+//      产物：<mc_server_dir>/runtime_dump/{item,block,entity,fluid}.json
+//      命令结束后会回传一行 [rd] DONE {...} 统计（插件靠它判断完成，没有标记文件）
+//   4) 执行 /mc_kb_rebuild 重建物品知识库（运行时注册表是权威数据）
+//
+// 说明：只导出注册表内容，不额外打日志；全量约 2.7 万条 / 0.3s / 6MB（复制服实测）。
 
-function rdEmit(o) { console.info('##RD##' + JSON.stringify(o)) }
+const RD_VERSION = '2'
+
+function rdRegistry() {
+  try {
+    return Java.loadClass('net.minecraft.core.registries.BuiltInRegistries')
+  } catch (e) {
+    // 1.19.2 没有 BuiltInRegistries，退回 Registry；成员名靠 Rhino 的 Mojmap 重映射
+    console.info('[rd] 未找到 BuiltInRegistries，退回 Registry 访问')
+    return Java.loadClass('net.minecraft.core.Registry')
+  }
+}
+
+function rdComponent() {
+  return Java.loadClass('net.minecraft.network.chat.Component')
+}
 
 function rdSnbt(stack) {
-  var t = Java.loadClass('net.minecraft.nbt.CompoundTag')
-  try { return stack.save(new t()).toString() } catch (e) { return 'ERR' }
+  return stack.save(new (Java.loadClass('net.minecraft.nbt.CompoundTag'))()).toString()
 }
 
-function rdItems() {
-  var BIR = Java.loadClass('net.minecraft.core.registries.BuiltInRegistries')
-  var IS = Java.loadClass('net.minecraft.world.item.ItemStack')
-  var C = Java.loadClass('net.minecraft.network.chat.Component')
-  var arr = BIR.ITEM.entrySet().toArray()
+// spec = [kind, 注册表字段名, 是否导出 SNBT]
+function rdOne(REG, Component, ItemStack, spec) {
+  var kind = spec[0]
+  var reg = REG[spec[1]]
+  if (!reg) throw new Error('注册表字段不存在: ' + spec[1])
+  var withStack = spec[2]
+  var arr = reg.entrySet().toArray()
+  var entries = []
   for (var i = 0; i < arr.length; i++) {
-    var it = arr[i].getValue()
-    var tid = ''
-    var res = ''
-    var st = ''
-    try { tid = it.getDescriptionId() } catch (e) {}
-    try { res = C.translatable(tid).getString() } catch (e) {}
-    try { st = rdSnbt(new IS(it)) } catch (e) {}
-    rdEmit({ kind: 'item', id: String(arr[i].getKey()), tkey: tid, resolved: res, stack: st })
+    var value = arr[i].getValue()
+    var entry = { kind: kind, id: String(arr[i].getKey()), tkey: '', resolved: '' }
+    try { entry.tkey = value.getDescriptionId() } catch (e) { entry.tkey = '' }
+    try { entry.resolved = Component.translatable(entry.tkey).getString() } catch (e) { entry.resolved = '' }
+    if (withStack) {
+      try { entry.stack = rdSnbt(new ItemStack(value)) } catch (e) { entry.stack = '' }
+    }
+    entries.push(entry)
   }
-  console.info('[rd] items ' + arr.length)
+  return entries
 }
 
-function rdBlocks() {
-  var BIR = Java.loadClass('net.minecraft.core.registries.BuiltInRegistries')
-  var C = Java.loadClass('net.minecraft.network.chat.Component')
-  var arr = BIR.BLOCK.entrySet().toArray()
-  for (var i = 0; i < arr.length; i++) {
-    var b = arr[i].getValue()
-    var tid = ''
-    var res = ''
-    try { tid = b.getDescriptionId() } catch (e) {}
-    try { res = C.translatable(tid).getString() } catch (e) {}
-    rdEmit({ kind: 'block', id: String(arr[i].getKey()), tkey: tid, resolved: res })
+function rdDump() {
+  var REG = rdRegistry()
+  var Component = rdComponent()
+  var ItemStack = Java.loadClass('net.minecraft.world.item.ItemStack')
+  var started = Date.now()
+  var counts = {}
+  var failed = []
+  var specs = [
+    ['item', 'ITEM', true],
+    ['block', 'BLOCK', false],
+    ['entity', 'ENTITY_TYPE', false],
+    ['fluid', 'FLUID', false]
+  ]
+  for (var s = 0; s < specs.length; s++) {
+    var kind = specs[s][0]
+    try {
+      var entries = rdOne(REG, Component, ItemStack, specs[s])
+      counts[kind] = entries.length
+      if (entries.length > 0) {
+        // 字符串路径直传：KubeJS 的 TypeWrapper 会解析成 Path 并做 verifyFilePath 校验
+        JsonIO.write('runtime_dump/' + kind + '.json', {
+          kind: kind,
+          count: entries.length,
+          entries: entries
+        })
+      }
+      console.info('[rd] ' + kind + ' ' + entries.length)
+    } catch (e) {
+      failed.push(kind)
+      console.warn('[rd] ' + kind + ' 导出失败: ' + e)
+    }
   }
-  console.info('[rd] blocks ' + arr.length)
-}
-
-function rdEntities() {
-  var BIR = Java.loadClass('net.minecraft.core.registries.BuiltInRegistries')
-  var C = Java.loadClass('net.minecraft.network.chat.Component')
-  var arr = BIR.ENTITY_TYPE.entrySet().toArray()
-  for (var i = 0; i < arr.length; i++) {
-    var et = arr[i].getValue()
-    var tid = ''
-    var res = ''
-    try { tid = et.getDescriptionId() } catch (e) {}
-    try { res = C.translatable(tid).getString() } catch (e) {}
-    rdEmit({ kind: 'entity', id: String(arr[i].getKey()), tkey: tid, resolved: res })
-  }
-  console.info('[rd] entities ' + arr.length)
-}
-
-function rdFluids() {
-  var BIR = Java.loadClass('net.minecraft.core.registries.BuiltInRegistries')
-  var arr = BIR.FLUID.entrySet().toArray()
-  for (var i = 0; i < arr.length; i++) rdEmit({ kind: 'fluid', id: String(arr[i].getKey()) })
-  console.info('[rd] fluids ' + arr.length)
-}
-
-function rdAll(server) {
-  console.info('[rd] start')
-  try { rdItems() } catch (e) { console.info('[rd] items FAIL ' + e) }
-  try { rdBlocks() } catch (e) { console.info('[rd] blocks FAIL ' + e) }
-  try { rdEntities() } catch (e) { console.info('[rd] entities FAIL ' + e) }
-  try { rdFluids() } catch (e) { console.info('[rd] fluids FAIL ' + e) }
-  console.info('[rd] DONE')
+  return { version: RD_VERSION, duration_ms: Date.now() - started, counts: counts, failed: failed }
 }
 
 ServerEvents.commandRegistry(event => {
-  var Commands = event.commands
-  event.register(Commands.literal('researchdump').executes(ctx => {
-    try { rdAll(ctx.source.server) } catch (e) { console.info('[rd] FATAL ' + e) }
-    return 1
-  }))
+  event.register(event.commands.literal('researchdump')
+    .requires(source => source.hasPermission(2))
+    .executes(ctx => {
+      var message
+      try {
+        message = '[rd] DONE ' + JSON.stringify(rdDump())
+      } catch (e) {
+        message = '[rd] FAIL ' + String(e)
+      }
+      // 命令反馈会随 RCON 响应一起回传，插件靠这一行判断完成（不写标记文件、不轮询）
+      try { ctx.source.sendSystemMessage(rdComponent().literal(message)) } catch (e) {}
+      return 1
+    }))
 })

@@ -201,6 +201,7 @@ LLM 不确定命令写法时会先查 `search_mc_commands` 内置命令知识库
 ### 📚 物品知识库
 - ✅ 搜索物品/方块/实体（search_mc_items）🆓
 - ✅ 重建知识库（/mc_kb_rebuild）🔒
+- ✅ 一键导出运行时数据并重建（/mc_kb_dump）🔒
 - ✅ 查看构建状态与覆盖率（/mc_kb_status）🔒
 
 **图标说明：**
@@ -217,6 +218,7 @@ LLM 知道 `minecraft:diamond_sword`，但不知道 278 个模组里哪个物品
 
 1. 在插件配置里填写 `mc_server_dir`（MC 服务端根目录，含 `mods/` 的那个目录）。
 2. 让管理员在聊天里执行 `/mc_kb_rebuild`（第一次会下载原版中文约 1.3 MB、CFPA 汉化包约 2 MB，之后走缓存）。
+   装了 KubeJS 的整合包可以先执行 `/mc_kb_dump`，一条指令完成运行时注册表导出 + 重建（见下节）。
 3. 之后直接对 LLM 说「给我 10 个黄铜锭」，它会先 `search_mc_items` 再 `give_item`；也可执行 `/mc_kb_status` 查看覆盖率。
 
 ### 数据目录
@@ -224,12 +226,12 @@ LLM 知道 `minecraft:diamond_sword`，但不知道 278 个模组里哪个物品
 知识库是 **可重建的派生缓存**，删掉重跑 `/mc_kb_rebuild` 即可，不影响服务器：
 
 ```
-AstrBot/data/plugin_data/mc_manager/
+AstrBot/data/plugin_data/astrbot_plugin_mc_manager/
 ├── items.db                  # SQLite：物品/方块/流体/实体对照表
 ├── vanilla/zh_cn-1.20.1.json # 原版官方中文（运行时下载 / 服主手动放置）
 ├── cfpa/*.zip                # CFPA 汉化包缓存（也可手动放 zip 兜底）
 ├── zh_cn_extra.json          # 服主自定义中文名（可选）
-└── runtime_dump/*.jsonl      # KubeJS 运行时权威导出（可选增强）
+└── runtime_dump/*.json       # KubeJS 运行时权威导出（可选增强）
 ```
 
 ### 自定义中文名（zh_cn_extra.json）
@@ -245,15 +247,26 @@ AstrBot/data/plugin_data/mc_manager/
 
 ### 运行时 dump（可选增强，解决「服务端私货/动态注册」物品）
 
-静态扫描看不到运行时动态注册的 ID。装了 KubeJS 的整合包可以：
+静态扫描看不到运行时动态注册的 ID。装了 KubeJS 的整合包用一条指令即可：
 
-1. 把 [assets/runtime_dump.js](assets/runtime_dump.js) 复制到 `<mc_server_dir>/kubejs/server_scripts/`，重启服务器或执行 `/reload`；
-2. 进服执行 `/researchdump`——结果以 `##RD##` 前缀写进服务器日志 `logs/latest.log`（几万行，属正常）；
-3. 执行 `python3 assets/extract_runtime_dump.py <mc_server_dir>/logs/latest.log`，
-   生成 `<mc_server_dir>/runtime_dump/{item,block,entity,fluid}.jsonl`；
-4. 再执行 `/mc_kb_rebuild`：运行时的注册表是权威数据，会覆盖静态扫描的名称与"能否 give"判断。
+- 管理员执行 `/mc_kb_dump`：插件自动把 [assets/runtime_dump.js](assets/runtime_dump.js) 部署到
+  `<mc_server_dir>/kubejs/server_scripts/`（内容没变就不重复写）、按需 `/reload`、
+  通过 RCON 执行 `/researchdump` 并等它结束，最后自动重建知识库并回执各类别条数。
+- 结果写到 `<mc_server_dir>/runtime_dump/{item,block,entity,fluid}.json`；运行时注册表是权威数据，
+  会覆盖静态扫描的名称与"能否 give"判断。
+- 首次执行会 `/reload`（约 3~4 秒 tick 积压，建议避开高峰），之后脚本内容不变就不再 reload。
+- 前提：KubeJS 的 `gameDirectory` 必须等于 `mc_server_dir`（启动脚本先 `cd` 到服务器目录再 `java`），
+  否则 JsonIO 会把文件写到别处、插件读不到。
 
-AstrBot 与 MC 不同机时，把 `runtime_dump/` 目录拷到插件数据目录 `data/plugin_data/mc_manager/runtime_dump/` 同样会被识别（同名文件取 mtime 新的）。
+自动流程不可用时的手工四步：
+
+1. `mkdir -p <mc_server_dir>/runtime_dump`（KubeJS 的写盘 API 不会自动建目录）；
+2. 把 `assets/runtime_dump.js` 复制到 `<mc_server_dir>/kubejs/server_scripts/`，重启服务器或执行 `/reload`；
+3. 游戏内 OP（权限等级 ≥2）或控制台执行 `/researchdump`，生成 `runtime_dump/{item,block,entity,fluid}.json`；
+4. 执行 `/mc_kb_rebuild` 重建。
+
+AstrBot 与 MC 不同机时，把 `runtime_dump/` 目录拷到插件数据目录
+`data/plugin_data/astrbot_plugin_mc_manager/runtime_dump/` 同样会被识别（`.json` 优先；旧版 `.jsonl` 仍兼容，可删）。
 
 ### 限制与说明
 
@@ -338,6 +351,15 @@ AstrBot 与 MC 不同机时，把 `runtime_dump/` 目录拷到插件数据目录
 3. 查看AstrBot日志获取详细错误信息
 
 ## 📝 更新日志
+
+### v1.5.0
+- ✨ 新增 `/mc_kb_dump`：一条指令完成运行时 dump 与知识库重建
+  - 自动部署 assets/runtime_dump.js（内容比对，未变不重复写）、按需 `/reload`
+  - 用命令反馈判断完成（RCON 会阻塞到命令执行结束），不再依赖日志 `##RD##` 与提取脚本
+  - 产物改为 `runtime_dump/{item,block,entity,fluid}.json`（KubeJS JsonIO 直写）
+  - dump 期间其它 RCON 命令串行排队；长命令超时只重连、不重发，避免重复执行
+- 🔥 移除 assets/extract_runtime_dump.py（日志提取层退役；旧 `.jsonl` 产物仍可读取）
+- 📚 runtime_dump.js 同时兼容 1.19.2（Registry fallback）与 1.20.1+（BuiltInRegistries）
 
 ### v1.4.0
 - ♻️ LLM 工具大幅精简（30 → 12）

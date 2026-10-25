@@ -15,6 +15,7 @@ from .rcon_client import MinecraftRCON
 from .tools import game_tools, server_tools, world_tools
 from .log_watcher import LogWatcher
 from .text_outbound import build_tellraw_commands
+from .runtime_dump import RuntimeDumpRunner
 from .kb import KnowledgeBase
 from .kb import commands as cmd_kb
 
@@ -113,6 +114,9 @@ class MCManagerPlugin(Star):
         
         # mc喊话 的按人冷却（发送者ID -> 上次发送的 monotonic 时间）
         self._shout_cooldown: dict[str, float] = {}
+        
+        # 运行时 dump 单飞锁：dump 期间不允许第二次并发触发（避免双份导出/RCON 响应串包）
+        self._dump_lock = asyncio.Lock()
         
         # 注入RCON客户端到所有工具模块
         self._inject_rcon()
@@ -845,6 +849,42 @@ class MCManagerPlugin(Star):
         
         result = await asyncio.to_thread(self.kb.rebuild, _log)
         yield event.plain_result(result)
+    
+    @filter.command("mc_kb_dump")
+    async def cmd_kb_dump(self, event: AstrMessageEvent):
+        """一键导出运行时注册表并重建物品知识库（自动部署 KubeJS 脚本，无需手工处理日志）"""
+        has_permission, error_msg = self._check_permission(event)
+        if not has_permission:
+            yield event.plain_result(error_msg)
+            return
+        
+        if self.kb is None:
+            yield event.plain_result("物品知识库不可用：插件数据目录初始化失败，请查看 AstrBot 日志")
+            return
+        
+        if not self.kb.enabled:
+            yield event.plain_result("未配置 mc_server_dir（MC 服务器根目录），无法导出运行时 dump。请先在插件配置里填写后重试")
+            return
+        
+        if self._dump_lock.locked():
+            yield event.plain_result("⏳ 已有 dump 流程在进行中，请等它结束（结果会单独回执）")
+            return
+        
+        # 锁在第一次 yield 之前拿到：locked() 检查与 async with 之间没有 await，不会并发放行
+        async with self._dump_lock:
+            yield event.plain_result("⏳ 正在导出运行时注册表（首次会自动部署脚本并 /reload，可能需要几十秒）...")
+            
+            def _log(message):
+                logger.info(f"[MC运行时dump] {message}")
+            
+            try:
+                runner = RuntimeDumpRunner(self.mc_server_dir, self.rcon)
+                result = await runner.run(lambda: self.kb.rebuild(_log))
+            except Exception as exc:  # 编排异常不能拖垮插件，堆栈进日志
+                logger.exception("运行时 dump 流程异常")
+                result = f"❌ 运行时 dump 异常：{exc}"
+            
+            yield event.plain_result(result)
     
     @filter.command("mc_kb_status")
     async def cmd_kb_status(self, event: AstrMessageEvent):

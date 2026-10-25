@@ -122,8 +122,8 @@ def format_rebuild(stats: dict) -> str:
         lines.append("自定义补充：应用 %d 条，忽略 %d 条（未匹配已扫到的 ID 或值为空）"
                      % (extra.get("applied", 0), extra.get("ignored", 0)))
     if stats.get("kubejs_hint"):
-        lines.append("提示：检测到 kubejs/。如需补齐动态注册物品，按 README「运行时 dump」导出 "
-                     "runtime_dump/*.jsonl 后重建即可合并")
+        lines.append("提示：检测到 kubejs/。如需补齐动态注册物品，执行 /mc_kb_dump 一键导出 "
+                     "runtime_dump/*.json 并重建（手工流程见 README「运行时 dump」）")
     if stats.get("dump", {}).get("files"):
         lines.append("运行时 dump：%d 个文件，合并 %d 次（权威 has_item 覆盖 %d 条）" % (
             stats["dump"]["files"], stats["dump"].get("updated", 0) + stats["dump"].get("new", 0),

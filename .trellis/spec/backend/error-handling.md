@@ -37,16 +37,20 @@ fallback。新增 tools 模块照抄这个守卫。
 
 ## Error Handling Patterns
 
-### A. RCON 层：连接类异常重试，其余立即返回（`rcon_client.py:70-105`）
+### A. RCON 层：连接类异常重试，超时不重发，其余立即返回（`rcon_client.py:72-121`）
 
 ```python
 max_retries = 2
 for attempt in range(max_retries):
     try:
         client = await self._ensure_connection()
-        response = await client.send_cmd(command)
+        async with self._send_lock:          # 同一 socket 上的命令串行，避免长命令期间响应串包
+            response = await client.send_cmd(command)   # timeout=None 用 aiomcrcon 默认 2s
         logger.info(f"执行命令: {command}, 响应: {response}")
         return response if response else "命令执行成功（无返回信息）"
+    except asyncio.TimeoutError:             # 必须先于 TRANSIENT_RCON_ERRORS
+        await self._reconnect()              # 重连丢弃挂起响应，但绝不重发
+        return f"错误: 命令响应超时（>{limit}，命令可能已在服务器执行）"
     except TRANSIENT_RCON_ERRORS as e:  # 定义见 rcon_client.py:17-25
         logger.warning(f"RCON连接异常 (尝试 {attempt + 1}/{max_retries}): {e}")
         await self._reconnect()
@@ -61,7 +65,10 @@ for attempt in range(max_retries):
 ```
 
 要点：只对**连接类**异常重试；其他异常立即返回；`execute_async` 的返回类型永远是 `str`，调用方不需要包
-`try`。
+`try`。**超时必须先于连接异常捕获**：`asyncio.wait_for` 抛的 `TimeoutError` 在 3.11+ 是 `OSError` 子类，
+落到 `TRANSIENT_RCON_ERRORS` 会被「重连后重发」，长命令（runtime dump）就会执行两次。
+`execute_async(command, timeout=None)` 的 `timeout` 只在需要长等待时显式传（dump 180s、`/reload` 120s），
+`None` 不传参保持默认 2s；`_send_lock` 让 dump 期间的其它命令排队而不是抢同一连接。
 
 注意：aiomcrcon 的 `send_cmd` 实际返回 `tuple[str, int]`（响应文本 + 请求 ID），`execute_async` 成功分支
 必须用 `isinstance(response, tuple)` 解包取 `[0]`（rcon_client.py:91-95）。2026-10 之前没解包，元组被

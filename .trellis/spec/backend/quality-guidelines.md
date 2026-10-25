@@ -128,7 +128,7 @@ async def give_item(player: str, item: str, count: int = 1) -> str:
 
 1. **必做：编译检查**
    ```bash
-   python3 -m compileall -q main.py rcon_client.py log_watcher.py text_outbound.py tools/ kb/
+   python3 -m compileall -q main.py rcon_client.py log_watcher.py text_outbound.py runtime_dump.py tools/ kb/
    ```
 2. **改了导入/装配：导入冒烟**。确认 `python3 -c "import ast; ast.parse(open('main.py').read())"` 之外，
    重点核对 `_inject_rcon()` 里有没有漏注入或写错模块名。

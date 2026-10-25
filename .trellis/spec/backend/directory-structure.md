@@ -16,6 +16,7 @@ main.py                  插件入口（唯一 @register 的 Star 子类）
  ├─→ tools/*.py          纯 RCON 命令层：不 import astrbot，不打日志
  ├─→ rcon_client.py      RCON 异步长连接封装
  ├─→ log_watcher.py      本地日志监听器：轮询 mc_server_dir/logs/latest.log（要求同机）
+ ├─→ runtime_dump.py     运行时 dump 编排：部署 KubeJS 脚本 → RCON 触发 → 解析命令反馈 → 重建
  └─→ text_outbound.py    RCON 出站文本纯函数：tellraw 拼接 + 1460B 字节预算切段
 ```
 
@@ -32,6 +33,7 @@ astrbot_plugin_mc_manager/
 ├── rcon_client.py          # MinecraftRCON：长连接、重试、连接测试
 ├── log_watcher.py          # LogWatcher：轮询本地 latest.log、轮转检测、把日志行解析成回调
 ├── text_outbound.py        # tellraw 命令构造 + UTF-8 字节预算切段（纯函数，可独立测试）
+├── runtime_dump.py         # 运行时 dump 编排（/mc_kb_dump：部署脚本 → RCON 触发 → 解析反馈 → 重建）
 ├── tools/
 │   ├── __init__.py         # 显式导出三个子模块（不用星号导入）
 │   ├── id_utils.py         # normalize_mc_id()：资源 ID 归一化（无命名空间才补 minecraft:）
@@ -49,8 +51,7 @@ astrbot_plugin_mc_manager/
 │   └── commands.py         # 命令知识库查询：原版内置清单 + 可选模组导出合并（与物品库无配置依赖）
 ├── assets/
 │   ├── vanilla_commands.json   # 原版命令固定知识库（随插件分发，非派生缓存）
-│   ├── runtime_dump.js         # KubeJS 运行时注册表导出脚本（可选增强）
-│   └── extract_runtime_dump.py # 日志里的 ##RD## 行 -> runtime_dump/*.jsonl
+│   └── runtime_dump.js         # KubeJS 运行时注册表导出脚本（可选增强，JsonIO 直写 *.json）
 ├── _conf_schema.json       # AstrBot WebUI 配置 schema（配置项唯一来源）
 ├── metadata.yaml           # 插件元信息（name/desc/author/version/repo）
 ├── requirements.txt        # 运行时依赖，目前只有 aio-mc-rcon
@@ -80,6 +81,7 @@ astrbot_plugin_mc_manager/
 | 新增一条 MC 命令能力 | `tools/` 最接近的模块加 `async def`，再在 `main.py` 包一层 `@filter.llm_tool` |
 | 新增一个 LLM 工具 | `main.py` 的 `tool_*`；实现下沉到 `tools/` |
 | 新增知识库能力（扫新来源/新查询） | `kb/` 对应模块；装配仍只在 `main.py` |
+| 新增运行时 dump / 知识库重建编排 | `runtime_dump.py`（编排 + 纯函数）；指令仍在 `main.py` |
 | 新增配置项 | `_conf_schema.json` + `main.py.__init__` 里 `self.config.get(...)` |
 | 新增 MC 日志事件 | `log_watcher.py` 加 `*_PATTERN` 常量 + 回调字段 + `set_*_callback` + `_process_log_line` 分支；`main.py` 加 `_on_*`，按需 `_forward_to_bound_group` / `_send_system_event` 上报 |
 | 新增对外指令 | `main.py` 的 `@filter.command`（`test_connection`、`test_log` 是范例） |

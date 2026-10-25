@@ -42,6 +42,8 @@ class MinecraftRCON:
         self.password = password
         self._client: Optional[Client] = None
         self._lock = asyncio.Lock()
+        # 命令发送锁：同一 socket 上并发 send_cmd 会让响应串包（长命令执行期间其它调用排队）
+        self._send_lock = asyncio.Lock()
     
     async def _ensure_connection(self) -> Client:
         """确保RCON连接存在且有效"""
@@ -67,12 +69,14 @@ class MinecraftRCON:
                     pass
                 self._client = None
     
-    async def execute_async(self, command: str) -> str:
+    async def execute_async(self, command: str, timeout: Optional[float] = None) -> str:
         """
         执行RCON命令
         
         Args:
             command: 要执行的MC命令（不需要/前缀）
+            timeout: 等待响应的秒数；None 用 aiomcrcon 默认的 2s。
+                     执行时长远超 2s 的命令（如 KubeJS dump）必须显式放大，否则会被判超时。
             
         Returns:
             命令执行结果
@@ -83,15 +87,36 @@ class MinecraftRCON:
         
         max_retries = 2
         for attempt in range(max_retries):
+            sent = False
             try:
                 client = await self._ensure_connection()
-                response = await client.send_cmd(command)
+                async with self._send_lock:
+                    sent = True
+                    if timeout is None:
+                        response = await client.send_cmd(command)
+                    else:
+                        response = await client.send_cmd(command, timeout=timeout)
                 # aiomcrcon 的 send_cmd 返回 (响应文本, 请求ID) 元组，只取文本
                 # （旧代码直接把元组插进返回字符串，会产生 "('...', 5)" 这样的脏文本）
                 if isinstance(response, tuple):
                     response = response[0]
                 logger.info(f"执行命令: {command}, 响应: {response}")
                 return response if response else "命令执行成功（无返回信息）"
+            except asyncio.TimeoutError:
+                if not sent:
+                    # 登录阶段超时：TCP 连上了但 RCON 没在 2s 内回登录包，命令根本没发出去
+                    logger.warning(f"RCON登录超时 (尝试 {attempt + 1}/{max_retries}): {self.host}:{self.port}")
+                    await self._reconnect()
+                    if attempt == max_retries - 1:
+                        return "错误: RCON 登录超时（服务器未在 2s 内完成登录，命令未发送）"
+                    continue
+                # 超时 ≠ 命令没执行：服务器只是还没把响应写完。重连丢弃挂起的响应，但绝不重发，
+                # 否则 dump 这类长命令会被执行两次（wait_for 抛 TimeoutError，3.11+ 它是 OSError
+                # 子类，必须先于 TRANSIENT_RCON_ERRORS 捕获，否则会被当成连接异常重试）。
+                limit = f"{timeout:g}s" if timeout is not None else "默认 2s"
+                logger.warning(f"RCON命令响应超时（>{limit}）: {command}")
+                await self._reconnect()
+                return f"错误: 命令响应超时（>{limit}，命令可能已在服务器执行）"
             except TRANSIENT_RCON_ERRORS as e:
                 logger.warning(f"RCON连接异常 (尝试 {attempt + 1}/{max_retries}): {e}")
                 await self._reconnect()
@@ -113,7 +138,8 @@ class MinecraftRCON:
         """
         try:
             client = await self._ensure_connection()
-            response = await client.send_cmd("list")
+            async with self._send_lock:
+                response = await client.send_cmd("list")
             if isinstance(response, tuple):
                 response = response[0]
             return True, f"连接成功！{response}"
