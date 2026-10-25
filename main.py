@@ -52,6 +52,9 @@ class MCManagerPlugin(Star):
         # 是否启用危险命令
         self.enable_dangerous = self.config.get("enable_dangerous_commands", False)
         
+        # 是否允许普通玩家（非管理员）使用 give_item
+        self.enable_public_give_item = self.config.get("enable_public_give_item", False)
+        
         # 唤醒词配置已移除 - 所有消息都提交，由AstrBot框架层唤醒词决定是否调用LLM
         # 旧配置: self.wake_words = self.config.get("wake_words", ["bot"])
         
@@ -501,9 +504,11 @@ class MCManagerPlugin(Star):
             item(string): 物品ID，如diamond、iron_sword；模组物品用完整ID，如 create:brass_ingot
             count(number): 物品数量，默认1
         """
-        has_permission, error_msg = self._check_permission(event)
-        if not has_permission:
-            return error_msg
+        # 配置 enable_public_give_item 开启时，普通玩家也可使用（免权限）
+        if not self.enable_public_give_item:
+            has_permission, error_msg = self._check_permission(event)
+            if not has_permission:
+                return error_msg
         return await game_tools.give_item(player, item, count)
     
     @filter.llm_tool(name="teleport_player")

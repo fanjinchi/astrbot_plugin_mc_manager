@@ -29,6 +29,12 @@
     "description": "是否启用stop等危险命令",
     "default": false
   },
+  "enable_public_give_item": {
+    "type": "bool",
+    "title": "物品给予免权限",
+    "description": "开启后普通玩家（非管理员）也可使用 give_item 给自己或他人发物品。生存服慎用：相当于开放创造级资源获取",
+    "default": false
+  },
   "enable_chat_response": {
     "type": "bool",
     "title": "启用聊天响应",

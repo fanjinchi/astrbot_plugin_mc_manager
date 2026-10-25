@@ -181,7 +181,7 @@ LLM 不确定命令写法时会先查 `search_mc_commands` 内置命令知识库
 - ✅ 搜索MC命令用法（search_mc_commands）：内置原版命令清单，支持中文描述搜索
 
 ### 🎮 高频游戏操作（🔒）
-- ✅ 给予物品（give_item）：支持模组物品完整ID
+- ✅ 给予物品（give_item）：支持模组物品完整ID；配置 `enable_public_give_item` 可放开给普通玩家（免权限）
 - ✅ 传送玩家（teleport_player）
 - ✅ 设置游戏模式（set_gamemode）：支持中文「生存/创造/冒险/旁观」
 - ✅ 设置天气（set_weather）/ 设置时间（set_time）：支持中文
@@ -279,6 +279,7 @@ AstrBot 与 MC 不同机时，把 `runtime_dump/` 目录拷到插件数据目录
 所有其他工具都需要管理员权限，包括：
 
 - **游戏操作**：give_item、teleport_player、set_gamemode、summon_entity 等
+  - 例外：配置 `enable_public_give_item: true` 后 give_item 免权限（默认关，生存服慎用）
 - **世界操作**：set_weather、set_time 等
 - **消息互通**：tellraw、send_to_qq_group
 - **通用执行**：execute_command（踢人/封禁/白名单/难度/游戏规则等一切其他命令）
