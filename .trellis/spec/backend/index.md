@@ -22,6 +22,7 @@
 | [Error Handling](./error-handling.md) | 双错误面、RCON 重试、返回值格式、裸 except 边界 | Filled |
 | [Quality Guidelines](./quality-guidelines.md) | LLM 工具契约、禁止/必用模式、验证方式、已知债务、提交约定 | Filled |
 | [Logging Guidelines](./logging-guidelines.md) | logger 来源、级别用法、消息格式、不该记什么 | Filled |
+| [Runtime Dump Contract](./runtime-dump.md) | `/mc_kb_dump` 跨层契约：JS 产物 schema、`[rd] DONE` 完成信号、RCON 超时、回执矩阵 | Filled |
 
 配套的通用思维指南在 [../guides/](../guides/index.md)（已预填，未按本项目定制）。
 
@@ -33,6 +34,7 @@
 |---|---|
 | 新增/修改 LLM 工具 | quality-guidelines（工具契约）→ directory-structure（改动清单）→ error-handling |
 | 改日志监控链路 | logging-guidelines → directory-structure |
+| 改运行时 dump / `/mc_kb_dump` | runtime-dump → directory-structure → error-handling |
 | 改配置项 | database-guidelines（配置落点）→ quality-guidelines（第 7 条） |
 | 不确定代码放哪 | directory-structure |
 
