@@ -103,3 +103,31 @@
 ### Next Steps
 
 - 重载 AstrBot 后真机验证群内进退服/死亡/成就推送与 mc绑定/mc喊话 全链路
+
+
+## Session 4: 运行时 dump 一键化（/mc_kb_dump）实现并上线
+<!-- trellis-session: v=2 fp=523f06b3460cfd11 -->
+
+**Date**: 2026-10-25
+**Task**: 运行时 dump 一键化（/mc_kb_dump）实现并上线
+**Branch**: `master`
+
+### Summary
+
+实现 /mc_kb_dump 一键链路：内容比对部署 KubeJS 脚本 → 按需 /reload → RCON 触发 researchdump（Unknown 退避）→ 解析 [rd] DONE 命令反馈 → 自动重建知识库。线上 1.19.2 实测 27,643 条 / 295ms / 约 6.2MB，重建 26,203 条 / 6.1s，二次触发不 reload；截断产物只跳过该类并 warning。rcon_client 支持长超时且超时不重发，kb/builder 支持 .json（旧 .jsonl 兼容），退役 extract_runtime_dump.py。子代理独立审查无 P0/P1，7 条 P2 已修。issue #4 已关闭。
+
+### Git Commits
+
+| Hash | Message |
+|------|---------|
+| `e6b34d8` | feat(tools): 支持配置放开 give_item 权限 |
+| `702d88d` | feat(kb): 运行时 dump 一键化 |
+| `5eb17af` | docs(spec): 补充运行时 dump 跨层契约 |
+
+### Status
+
+[OK] **Completed**
+
+### Next Steps
+
+- 本地还有 archive/journal 两个提交未 push；如需远端同步可 git push origin master
