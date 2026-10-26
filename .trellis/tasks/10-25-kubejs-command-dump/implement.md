@@ -98,8 +98,19 @@ ruff check .       # 见下方偏差说明
   - 幂等：第二次触发 counts 完全一致（commands 2061），查询结果中 `/researchdump` 只出现 1 次
   - 副本已 `stop` 并 `rm -rf`，21335/25576 释放；原服脚本 sha `b8e213f0…`（旧 v2）与 `runtime_dump/`
     （无 commands.json）均未被改动
-- [ ] **Farming / 1.20.1（副本）**：未执行（Farming 原本停止；可按同样方式复制副本验证 `wine info` / `wine age <years>`）。
-- [ ] 坏/旧快照保留：由离线用例覆盖，未在副本上单独演练。
+- [x] **Farming / 1.20.1（原服，用户确认已停用）**：用 Java 21 启动（`Done (1.434s)`），临时端口 21335/25576，
+  测后已还原 `server.properties`、移除部署脚本与 `runtime_dump/`、删除本次 boot 日志与崩溃报告。证据：
+  - `[rd] DONE {"version":"3","duration_ms":884,"counts":{"item":29330,"block":25747,"entity":734,"fluid":504,"commands":2248},"failed":[]}`
+  - `commands.json` 295,944 B，`producer=kubejs count=2248 roots=193 redirects=109`
+  - `wine` 根存在，条目正是 `wine age <years>` / `wine info`；`search_mc_commands("wine info")` 命中该分支
+  - `researchdump` 在根集合内且可查；`execute`/`weather` 返回完整 usage 与 redirect 提示
+  - 物品 dump：item 29330 / block 25747 / entity 734 / fluid 504（合计 56,315）；物品库重建 41,326 条
+  - 幂等：二次触发 counts 完全一致（2248），`/researchdump` 只出现 1 次
+  - 附加事实：Farming 首次启动失败是 `[TAB栏]tablist-1.0.2.jar` 用 Java 21 编译（class 65）而默认 java 为 17 导致，
+    与本改动无关；改用 Java 21 后正常
+- [x] 跨版本对照（同一套 KubeJS 导出）：CTI 1.19.2 188 根 / 2,061 usage / 93 redirect；
+  Farming 1.20.1 193 根 / 2,248 usage / 109 redirect；两版均为 `RD_VERSION=3`、`failed=[]`
+- [ ] 坏/旧快照保留：由离线用例覆盖，未在服务器上单独演练（会改动线上目录，需要时另开验证）。
 
 直接在生产目录跑（会写入线上目录，需明确批准）：
 
@@ -116,7 +127,8 @@ ruff check .       # 见下方偏差说明
 
 - [x] 对照父 AC1–AC5 和本子任务全部 AC：CTI0.46 副本已覆盖 AC1（真实导出 2061 条/188 根）、AC2（`researchdump` 可查）、
   AC3（首轮一次 dump 即查询、二次触发幂等无重复）、AC4（同根继承 desc、来源/权限未知、不重复）、AC5（四类 dump 与物品重建不回归）、
-  AC7（38 个离线用例 + 文档）；AC6 的失败关闭由离线用例覆盖。**未覆盖并明确保留**：Farming 1.20.1 真机、跨机复制演练。
+  AC7（38 个离线用例 + 文档），且已在 CTI0.46（1.19.2）与 Farming（1.20.1）双版本验证；AC6 的失败关闭由离线用例覆盖。
+  **未覆盖并明确保留**：跨机复制演练、坏快照的线上演练。
 - [ ] 分派独立 spec/standards review 与 `trellis-check`，问题回原分支修复。
 - [x] 将稳定的新契约更新到 `.trellis/spec/backend/`：把 quality-guidelines 里「本项目没有测试套件」改为 `tests/` 用标准库 unittest，并修正「没有 lint 配置」的过时表述以反映 AstrBot 根项目 ruff 配置；commit 仅在有明确用户要求时执行。
 - [ ] 子任务验收后归档，再允许父任务启动 RCON fallback。

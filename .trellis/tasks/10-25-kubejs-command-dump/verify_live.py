@@ -69,7 +69,9 @@ async def main(args):
         data.get("count"), len(roots), len(redirects)))
     print("样例条目:", json.dumps(entries[:5], ensure_ascii=False))
     print("root 数 >= 100 ?", len(roots) >= 100, "| 含 researchdump ?", "researchdump" in roots)
-    print("含 execute ?", "execute" in roots)
+    print("含 execute ?", "execute" in roots, "| 含 wine ?", "wine" in roots)
+    print("wine 相关条目:", json.dumps(
+        [e for e in entries if e.get("name") == "wine"][:6], ensure_ascii=False))
 
     section("3) 物品 dump 未回退")
     for kind in ("item", "block", "entity", "fluid"):
@@ -84,7 +86,7 @@ async def main(args):
     section("4) search_mc_commands 查询（数据目录发布快照）")
     published = commands.snapshot_path(args.data_dir)
     print("canonical:", published, os.path.isfile(published))
-    for keyword in ("researchdump", "execute", "weather"):
+    for keyword in args.keywords.split(","):
         text = commands.search_commands(keyword, limit=2, data_dir=args.data_dir)
         print("\n--- keyword=%s ---\n%s" % (keyword, text[:900]))
 
@@ -111,5 +113,6 @@ if __name__ == "__main__":
     parser.add_argument("--rcon-host", default="127.0.0.1")
     parser.add_argument("--rcon-port", type=int, default=25575)
     parser.add_argument("--rcon-password", default="guigui")
+    parser.add_argument("--keywords", default="researchdump,execute,weather")
     args = parser.parse_args()
     sys.exit(asyncio.run(main(args)))
