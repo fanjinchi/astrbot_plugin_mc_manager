@@ -128,6 +128,10 @@ def format_rebuild(stats: dict) -> str:
         lines.append("运行时 dump：%d 个文件，合并 %d 次（权威 has_item 覆盖 %d 条）" % (
             stats["dump"]["files"], stats["dump"].get("updated", 0) + stats["dump"].get("new", 0),
             stats["dump"].get("has_item", 0)))
+    cmd = stats.get("commands") or {}
+    if cmd.get("status") == "published":
+        lines.append("命令快照：%d 条用法 / %d 个根命令（来源 %s），search_mc_commands 已可查询" % (
+            cmd.get("count", 0), cmd.get("roots", 0), cmd.get("producer") or "未知"))
     if stats.get("warnings"):
         lines.append("⚠️ 告警：")
         for msg in stats["warnings"][:6]:

@@ -636,8 +636,9 @@ class MCManagerPlugin(Star):
     async def tool_search_mc_commands(self, event: AstrMessageEvent, keyword: str, limit: int = 8) -> str:
         """搜索MC命令用法（无需权限）
         
-        在内置的原版命令知识库（以及服务器导出的模组命令，如有）里按命令名或中文描述模糊搜索，
-        返回命令语法、说明和游戏内权限等级。准备调用 execute_command 但不确定命令怎么写时先用它查。
+        在内置原版命令知识库和服务器导出的运行时命令快照里，按命令名、中文描述或参数语法模糊搜索，
+        返回命令语法、说明和权限等级（运行时条目的权限显示为未知）。运行时语法来自服务端当前命令树（已注册路径不代表当前调用者必然可执行；
+        RCON help 回退快照的深层分支是压缩语法）。准备调用 execute_command 但不确定命令怎么写时先用它查。
         
         Args:
             keyword(string): 搜索关键词，如「封禁」「ban」「weather」「传送」

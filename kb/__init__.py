@@ -12,9 +12,22 @@ except ImportError:  # 允许脱离 AstrBot 环境独立测试/复现（脚本�
 
     logger = logging.getLogger("mc_manager.kb")
 
-from . import builder, query, store
+from . import builder, commands, query, store
 
 __all__ = ["KnowledgeBase"]
+
+
+def _with_command_note(text: str, cmd_info: dict) -> str:
+    """物品重建失败时，命令快照的成功导入或告警仍要说清楚。"""
+    notes = []
+    if cmd_info.get("status") == "published":
+        notes.append(
+            "（命令快照已单独导入：%d 条用法 / %d 个根命令，物品知识库仍失败）"
+            % (cmd_info.get("count", 0), cmd_info.get("roots", 0))
+        )
+    if cmd_info.get("warning"):
+        notes.append("⚠️ " + cmd_info["warning"])
+    return text + ("\n" + "\n".join(notes) if notes else "")
 
 
 class KnowledgeBase:
@@ -38,6 +51,8 @@ class KnowledgeBase:
 
     def rebuild(self, log=None) -> str:
         """阻塞重建（调用方应放到 asyncio.to_thread 里跑），返回回执文案。"""
+        # 命令快照先于物品重建导入：物品扫描可能失败，命令快照本身仍是独立有效的派生数据
+        cmd_info = commands.import_snapshot(self.server_dir, self.data_dir)
         try:
             stats = builder.rebuild(
                 server_dir=self.server_dir,
@@ -51,10 +66,14 @@ class KnowledgeBase:
             )
         except ValueError as exc:  # 配置/环境错误（用 ValueError，不引入自定义异常类）
             logger.warning("物品知识库重建失败: %s", exc)
-            return "❌ 知识库重建失败：%s" % exc
+            return _with_command_note("❌ 知识库重建失败：%s" % exc, cmd_info)
         except Exception as exc:  # 重建失败不能拖垮插件，把原因原样带回给管理员，堆栈进日志
             logger.exception("物品知识库重建异常")
-            return "❌ 知识库重建异常：%s" % exc
+            return _with_command_note("❌ 知识库重建异常：%s" % exc, cmd_info)
+        stats["commands"] = cmd_info
+        if cmd_info.get("warning"):
+            # 命令快照问题只作为告警展示，不阻断物品重建
+            stats.setdefault("warnings", []).insert(0, cmd_info["warning"])
         return query.format_rebuild(stats)
 
     def search(self, keyword: str, limit: int = 10) -> str:

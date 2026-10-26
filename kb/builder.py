@@ -179,13 +179,17 @@ def _load_runtime_dumps(server_dir: str, data_dir: str, rows, warnings) -> dict:
             if lower.startswith("_") or not (lower.endswith(".json") or lower.endswith(".jsonl")):
                 continue
             p = os.path.join(d, fn)
+            is_json = lower.endswith(".json")
+            stem = lower[:-5] if is_json else lower[:-6]
+            if stem == "commands":
+                # 命令快照由 kb/commands.py 消费：计入会抑制 kubejs_hint、虚报 dump 文件数，
+                # 0 字节的空文件也不该进物品告警
+                continue
             try:
                 if os.path.getsize(p) == 0:
-                    if lower.endswith(".json"):
+                    if is_json:
                         warnings.append("runtime_dump 文件为空，已跳过：%s" % os.path.basename(p))
                     continue
-                is_json = lower.endswith(".json")
-                stem = lower[:-5] if is_json else lower[:-6]
                 rank = 1 if is_json else 0
                 prev = files.get(stem)
                 if (prev is None or rank > prev[0]

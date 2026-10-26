@@ -33,7 +33,7 @@ MANUAL_FALLBACK = (
     "1) mkdir -p <服务器目录>/runtime_dump\n"
     "2) 把插件 assets/runtime_dump.js 复制到 <服务器目录>/kubejs/server_scripts/，重启或 /reload\n"
     "3) 游戏内 OP 或控制台执行 /researchdump\n"
-    "4) /mc_kb_rebuild"
+    "4) /mc_kb_rebuild（会同时导入 runtime_dump/commands.json 命令快照）"
 )
 
 _ASSET_SCRIPT = os.path.join(os.path.dirname(os.path.abspath(__file__)), "assets", "runtime_dump.js")
@@ -100,14 +100,18 @@ def _script_deploy_needed(target: str, content: str) -> bool:
 
 def _format_counts(summary: dict) -> str:
     counts = summary.get("counts") or {}
+    item_kinds = ("item", "block", "entity", "fluid")
     parts = ["%s %d" % (kind, _as_int(counts.get(kind)))
-             for kind in ("item", "block", "entity", "fluid") if kind in counts]
-    total = sum(_as_int(v) for v in counts.values())
+             for kind in item_kinds if kind in counts]
+    total = sum(_as_int(counts.get(kind)) for kind in item_kinds)
     tail = "共 %d 条" % total
+    if "commands" in counts:
+        # 命令用法条数与物品条目不同量纲：单独成项，不并入物品总数
+        tail += "，命令 %d 条" % _as_int(counts.get("commands"))
     duration = summary.get("duration_ms")
     if isinstance(duration, (int, float)):
         tail += ("，%.1fs" % (duration / 1000.0)) if duration >= 1000 else ("，%dms" % duration)
-    return "%s（%s）" % (" / ".join(parts), tail)
+    return "%s（%s）" % (" / ".join(parts) or "无物品类别", tail)
 
 
 def _fail_reason(response: str) -> str:

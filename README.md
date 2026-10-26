@@ -178,7 +178,7 @@ LLM 不确定命令写法时会先查 `search_mc_commands` 内置命令知识库
 ### 🟢 信息查询（🆓 无需权限）
 - ✅ 查看在线玩家（list_players）
 - ✅ 搜索物品/方块/实体知识库（search_mc_items）
-- ✅ 搜索MC命令用法（search_mc_commands）：内置原版命令清单，支持中文描述搜索
+- ✅ 搜索MC命令用法（search_mc_commands）：内置原版清单 + 服务器导出的模组命令树，支持命令名/中文描述/参数语法搜索
 
 ### 🎮 高频游戏操作（🔒）
 - ✅ 给予物品（give_item）：支持模组物品完整ID；配置 `enable_public_give_item` 可放开给普通玩家（免权限）
@@ -231,7 +231,9 @@ AstrBot/data/plugin_data/astrbot_plugin_mc_manager/
 ├── vanilla/zh_cn-1.20.1.json # 原版官方中文（运行时下载 / 服主手动放置）
 ├── cfpa/*.zip                # CFPA 汉化包缓存（也可手动放 zip 兜底）
 ├── zh_cn_extra.json          # 服主自定义中文名（可选）
-└── runtime_dump/*.json       # KubeJS 运行时权威导出（可选增强）
+└── runtime_dump/
+    ├── *.json                # 物品/方块/实体/流体（KubeJS 运行时权威导出）
+    └── commands.json         # 命令树快照（search_mc_commands 消费，可只复制本文件跨机使用）
 ```
 
 ### 自定义中文名（zh_cn_extra.json）
@@ -252,8 +254,8 @@ AstrBot/data/plugin_data/astrbot_plugin_mc_manager/
 - 管理员执行 `/mc_kb_dump`：插件自动把 [assets/runtime_dump.js](assets/runtime_dump.js) 部署到
   `<mc_server_dir>/kubejs/server_scripts/`（内容没变就不重复写）、按需 `/reload`、
   通过 RCON 执行 `/researchdump` 并等它结束，最后自动重建知识库并回执各类别条数。
-- 结果写到 `<mc_server_dir>/runtime_dump/{item,block,entity,fluid}.json`；运行时注册表是权威数据，
-  会覆盖静态扫描的名称与"能否 give"判断。
+- 结果写到 `<mc_server_dir>/runtime_dump/{item,block,entity,fluid}.json` 与 `commands.json`（命令树）；
+  运行时注册表是权威数据，会覆盖静态扫描的名称与"能否 give"判断。
 - 首次执行会 `/reload`（约 3~4 秒 tick 积压，建议避开高峰），之后脚本内容不变就不再 reload。
 - 前提：KubeJS 的 `gameDirectory` 必须等于 `mc_server_dir`（启动脚本先 `cd` 到服务器目录再 `java`），
   否则 JsonIO 会把文件写到别处、插件读不到。
@@ -262,11 +264,30 @@ AstrBot/data/plugin_data/astrbot_plugin_mc_manager/
 
 1. `mkdir -p <mc_server_dir>/runtime_dump`（KubeJS 的写盘 API 不会自动建目录）；
 2. 把 `assets/runtime_dump.js` 复制到 `<mc_server_dir>/kubejs/server_scripts/`，重启服务器或执行 `/reload`；
-3. 游戏内 OP（权限等级 ≥2）或控制台执行 `/researchdump`，生成 `runtime_dump/{item,block,entity,fluid}.json`；
-4. 执行 `/mc_kb_rebuild` 重建。
+3. 游戏内 OP（权限等级 ≥2）或控制台执行 `/researchdump`，生成 `runtime_dump/{item,block,entity,fluid,commands}.json`；
+4. 执行 `/mc_kb_rebuild` 重建（会同时导入 `commands.json` 命令快照）。
 
 AstrBot 与 MC 不同机时，把 `runtime_dump/` 目录拷到插件数据目录
 `data/plugin_data/astrbot_plugin_mc_manager/runtime_dump/` 同样会被识别（`.json` 优先；旧版 `.jsonl` 仍兼容，可删）。
+只复制 `commands.json` 即可迁移命令查询，但不等于迁移完整物品知识库（物品仍需要 `mc_server_dir` 与 `mods/`）。
+
+### 命令知识库（运行时命令树）
+
+同一份 dump 会把服务端当前命令树导出为 `runtime_dump/commands.json`（`kind=commands`，
+`producer=kubejs`），并由 `/mc_kb_dump` 或 `/mc_kb_rebuild` 发布到插件数据目录。
+之后 `search_mc_commands` 能按根命令名或参数语法查到模组命令（如 `wine info` / `wine age <years>`），
+没有快照时仍按内置原版清单回答。边界：
+
+- 语法来自当前 dispatcher 已注册的完整 usage 路径（`getAllUsage(..., restricted=false)`），
+  **不代表当前 RCON/玩家必然可执行**：实际执行仍受权限等级、命令来源和执行体内部检查限制。
+- `redirect`（别名指向）只作为提示展示，不作为可直接拼装的完整命令。
+- 参数只有 `<name>` 形式，不提供可选性/类型/范围；模组归属与权限等级无法可靠取得，
+  运行时条目的来源显示「未知」、权限显示未知。**有全量快照时原版根也被运行时条目覆盖**，
+  所以权限同样显示未知；只有在没有快照、或快照里缺该根时，内置原版条目才显示原版权限。
+- 快照是原子发布的派生缓存：坏文件、截断或 count 不符会被拒绝，旧有效快照保持可查；
+  单根命令最多展示 8 条 usage，超出会提示细化关键词。
+- 无 KubeJS 的服务器计划用 RCON `help` 回退采集（任务 `10-25-rcon-help-command-fallback`，
+  **尚未实现**；届时快照 `producer=rcon`，深层分支是压缩语法，查询会标注降级说明）。
 
 ### 限制与说明
 
@@ -286,7 +307,7 @@ AstrBot 与 MC 不同机时，把 `runtime_dump/` 目录拷到插件数据目录
 
 - `list_players` - 查看在线玩家
 - `search_mc_items` - 搜索物品知识库（物品/方块/实体的 ID 与中英文名）
-- `search_mc_commands` - 搜索 MC 命令用法（内置原版命令清单 + 可选的模组命令导出）
+- `search_mc_commands` - 搜索 MC 命令用法（内置原版清单 + 可选的运行时命令树快照）
 
 ### 🔴 需要权限（管理操作）
 所有其他工具都需要管理员权限，包括：
