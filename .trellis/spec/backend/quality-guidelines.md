@@ -6,13 +6,17 @@
 
 ## Overview
 
-现实约束先说清楚：**本项目没有测试套件、没有 lint 配置、没有 CI**（没有 `pyproject.toml`/`ruff.toml`/
-`pytest.ini`，全仓 0 个 `test_*.py`）。质量靠三件事兜：编译检查、真服务器联调、review 清单。
+现实约束先说清楚：**本仓库自身没有 lint 配置，也没有 CI**；插件目录里已有 `tests/`
+（标准库 `unittest`，2026-10 命令知识库任务新建）。Lint 配置继承 AstrBot 根项目 `pyproject.toml`
+（`line-length = 88`，select `F/W/E/ASYNC/C4/Q/I/UP`，排除 `tests`）；根项目的历史文件并未 reformat，
+所以**只在新增/改动文件上跑 `ruff format`/`ruff check`**，不做全仓 reformat——否则会产生几十个文件的无关 diff。
+目标是**不同时新增错误类型**；剩余告警都是仓库既有的 `UP031`（`%` 格式化）/ `UP045`（`Optional`），
+不要为了清零在单文件里混用两种风格；要彻底干净需要单独的「全仓 ruff 基线」任务。
 
-因此：不要说"测试通过"。能说的是"编译通过 + 真机验证过哪条链路"。
+因此：不要说"测试通过"就完事。能说的是"离线用例通过 + 编译通过 + 真机验证过哪条链路"。
 
 工具链现状：Python 3.12（AstrBot 要求 3.10+），运行时依赖只有 `aio-mc-rcon>=1.4.2`
-（`requirements.txt`）。
+（`requirements.txt`）；测试只用标准库，不引入 pytest。
 
 ---
 
@@ -124,12 +128,15 @@ async def give_item(player: str, item: str, count: int = 1) -> str:
 
 ## Testing Requirements
 
-没有自动化测试，验证分三档，按改动范围选：
+验证分三档，按改动范围选：
 
-1. **必做：编译检查**
+1. **必做：编译检查 + 离线用例**
    ```bash
-   python3 -m compileall -q main.py rcon_client.py log_watcher.py text_outbound.py runtime_dump.py tools/ kb/
+   python3 -m compileall -q main.py rcon_client.py log_watcher.py text_outbound.py runtime_dump.py tools/ kb/ tests/
+   python3 -m unittest discover -s tests -v
    ```
+   `tests/` 覆盖命令快照契约（校验/发布/导入/查询聚合）与 dump 回执；新增契约时补对应用例，
+   不要为"证明正确"造框架，也不要拿 mock 用例充当真机证据。
 2. **改了导入/装配：导入冒烟**。确认 `python3 -c "import ast; ast.parse(open('main.py').read())"` 之外，
    重点核对 `_inject_rcon()` 里有没有漏注入或写错模块名。
 3. **改了 RCON 行为：真机验证**。装到 AstrBot，`/test_connection`（`main.py:671`）看 RCON；`/test_log`

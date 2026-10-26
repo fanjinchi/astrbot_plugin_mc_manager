@@ -6,19 +6,23 @@
 ## 1. Scope / Trigger
 
 改以下任一项前先读本文件：`assets/runtime_dump.js`、`runtime_dump.py`、`kb/builder.py` 的
-`_load_runtime_dumps`/`_read_dump_objects`、`rcon_client.py` 的 `execute_async` 超时语义。
+`_load_runtime_dumps`/`_read_dump_objects`、`kb/commands.py` 的命令快照校验/发布/查询、
+`rcon_client.py` 的 `execute_async` 超时语义。
 
 ## 2. Signatures
 
 | 层 | 契约 | 位置 |
 |---|---|---|
-| AstrBot 指令 | `/mc_kb_dump`（async generator，先 `_check_permission`，单飞锁） | `main.py:853-887` |
-| 编排入口 | `RuntimeDumpRunner(server_dir, rcon).run(rebuild) -> str`，`rebuild` 是同步无参可调用（内部 `asyncio.to_thread`） | `runtime_dump.py:130/141` |
+| AstrBot 指令 | `/mc_kb_dump`（async generator，先 `_check_permission`，单飞锁） | `main.py:854-888` |
+| 编排入口 | `RuntimeDumpRunner(server_dir, rcon).run(rebuild) -> str`，`rebuild` 是同步无参可调用（内部 `asyncio.to_thread`） | `runtime_dump.py:134/144` |
 | RCON | `execute_async(command: str, timeout: float | None = None) -> str`；`None` 保持 aiomcrcon 默认 2s | `rcon_client.py:72` |
-| KubeJS 命令 | `researchdump`，`requires(source => source.hasPermission(2))` | `assets/runtime_dump.js:91` |
-| 写盘 | `JsonIO.write('runtime_dump/<kind>.json', {kind,count,entries})`，路径相对 `gameDirectory` | `assets/runtime_dump.js:74` |
-| 完成反馈 | 单行 `[rd] DONE {"version","duration_ms","counts","failed"}`；整体异常 `[rd] FAIL <原因>` | `assets/runtime_dump.js:95-97` |
-| builder 读取 | `_load_runtime_dumps(server_dir, data_dir, rows, warnings) -> dict`；`_read_dump_objects(path) -> list|None` | `kb/builder.py:167/142` |
+| KubeJS 命令 | `researchdump`，`requires(source => source.hasPermission(2))` | `assets/runtime_dump.js:147` |
+| 写盘（物品类） | `JsonIO.write('runtime_dump/<kind>.json', {kind,count,entries})`，路径相对 `gameDirectory` | `assets/runtime_dump.js:109` |
+| 写盘（命令树） | `rdCommandEntries(ctx)` → `JsonIO.write('runtime_dump/commands.json', ...)` | `assets/runtime_dump.js:57/125` |
+| 完成反馈 | 单行 `[rd] DONE {"version","duration_ms","counts","failed"}`；整体异常 `[rd] FAIL <原因>` | `assets/runtime_dump.js:151-153` |
+| builder 读取 | `_load_runtime_dumps(server_dir, data_dir, rows, warnings) -> dict`；`_read_dump_objects(path) -> list|None`；名为 `commands` 的 stem 直接跳过 | `kb/builder.py:167/142` |
+| 命令快照发布/导入 | `publish_snapshot(snapshot, data_dir)`（mkstemp + `os.replace` 原子替换）、`import_snapshot(server_dir, data_dir) -> {status,count,roots,producer,warning}` | `kb/commands.py:143/169` |
+| 命令快照读取/查询 | `load_snapshot(data_dir) -> (snapshot, warning)` 每次查询重读；`search_commands(keyword, limit, data_dir)` 聚合 | `kb/commands.py:213/339` |
 
 ## 3. Contracts
 
@@ -29,7 +33,21 @@
 - 文件名 `<kind>.json`，`kind ∈ {item,block,entity,fluid}`；某类 0 条或抛异常时**不写文件**（旧文件保留）
 - `id` 是 `ResourceKey[...]` 形态，由 `_dump_id`（`kb/builder.py:132`）解析
 - `stack` 仅 item；fluid 没有 `tkey/resolved`（字段可缺）；字段名冻结
-- `JsonIO.write` **不建父目录**且是 truncate 写：插件必须先建 `<server>/runtime_dump/`（`runtime_dump.py:150`）
+- `JsonIO.write` **不建父目录**且是 truncate 写：插件必须先建 `<server>/runtime_dump/`（`runtime_dump.py:150-153`）
+
+命令树是同一目录下的独立文件 `commands.json`（`RD_VERSION = '3'` 起）：
+```json
+{"kind":"commands","schema_version":1,"producer":"kubejs","count":2,
+ "entries":[{"name":"wine","syntax":"wine age <years>","source":"unknown","level":null},
+            {"name":"wine","syntax":"wine info","source":"unknown","level":null}]}
+```
+- 来源：`dispatcher.getAllUsage(dispatcher.getRoot(), ctx.source, false)`（活动 dispatcher，不缓存注册事件里的那个）。
+  1.19.2 / 1.20.1（brigadier 1.0.18 / 1.1.8）实测输出一致：`foo`、`foo bar`、`foo <count>`、`alias -> foo`、`loop ...`。
+- redirect 行拆成 `syntax`（指向路径）+ `redirect`（目标 literal 或 `...`），不作为可执行语法导出。
+  目标是**外部 dispatcher 的 root** 时 Brigadier 输出 `prefix ->`（目标 usageText 为空），同样记为 `redirect="..."`。
+- 命令树导出失败或 0 条：`counts.commands` 不写入、`failed` 追加 `commands`，**不写空文件**，旧快照保留。
+- 命令条目不计入物品 dump 文件数：`_load_runtime_dumps` 在空文件告警**之前**跳过 stem 为 `commands` 的文件
+  （否则会抑制 `kubejs_hint`、虚报 dump 文件数，0 字节的空快照还会进物品告警）。
 - `gameDirectory` 必须等于 `mc_server_dir`（启动脚本先 `cd`），否则文件写到别处
 
 ### 3.2 完成信号
@@ -68,13 +86,31 @@
 - `_rcon_error_kind`：断连 / 超时 / other / 正常文本
 - `_trigger`：Unknown→DONE、Unknown 耗尽、FAIL、无反馈首次重试、断连/超时/other
 - `execute_async`：超时单发、`timeout=None` 仍 2s、发送锁串行、登录超时区分
-- `_load_runtime_dumps`：`.json` 优先、截断 warning、0 字节 warning、`_` 前缀、非 dump JSON
+- `_load_runtime_dumps`：`.json` 优先、截断 warning、0 字节 warning、`_` 前缀、非 dump JSON、
+  跳过 `commands`（含 0 字节 `commands.json` 不产生物品告警）
+- `kb/commands.py`（`tests/test_commands.py`）：快照校验（kind/version/producer/count/name-syntax）、去重排序、
+  原子替换失败保留旧快照（无残留临时文件）、导入 missing/published/invalid/error、legacy JSONL 仅无 canonical 时读取、
+  根合并（只继承 desc/cat，source/level 未知）、**合并根必须能用继承的中文 desc 搜到**（回归 P0）、仅根 usage、
+  根+子 usage、redirect 提示、限流按根计数、8 条用量上限、`producer=rcon` 降级提示、坏快照告警、
+  快照存在时的无结果文案、物品重建失败时命令告警仍进回执
+- `_format_counts`（`tests/test_runtime_dump.py`）：commands 不并入物品总数
+- `assets/runtime_dump.js`（`tests/test_dump_script.py` + `tests/js_dump_harness.js`，Node 桩执行真实脚本）：
+  五类产物、RD_VERSION=3、五种 usage 形态（含外部 root 的 `prefix ->`）、dispatcher 抛错时只污染 `failed`、产物过 Python 契约校验
+- **尚未覆盖（待补）**：`_trigger` 的 Unknown→DONE / 重试 / 失败分支与 `execute_async` 的 socket 级超时语义。
+  前者需要 fake RCON 客户端，后者依赖真实连接；目前靠真机验证，写用例时不要 mock 掉被验证的语义。
 
 ## 7. Wrong vs Correct
 
 - **Wrong**：`[rd] FAIL ... unknown ...` 先按 Unknown 处理 → 重试 16 次、重复执行 dump
-  **Correct**：先判 `DONE_PREFIX`/`FAIL_PREFIX`，再判 Unknown（`runtime_dump.py:238`）
+  **Correct**：先判 `DONE_PREFIX`/`FAIL_PREFIX`，再判 Unknown（`runtime_dump.py:242`）
 - **Wrong**：超时后重发命令（旧 `TRANSIENT_RCON_ERRORS` 吞掉 `TimeoutError`）→ dump 执行两次
   **Correct**：`asyncio.TimeoutError` 前置捕获、只重连不重发（`rcon_client.py:105`）
 - **Wrong**：把 `.json` 当 `.jsonl` 逐行读 → 整文件 JSON 永远解析失败
   **Correct**：按后缀分流（`kb/builder.py:148-164`）
+- **Wrong**：把命令条目的 `name`（根 literal）当物品 id 或把 `commands.json` 计进物品 dump 文件数
+  **Correct**：`_load_runtime_dumps` 直接跳过 `commands` stem，命令快照只由 `kb/commands.py` 消费
+- **Wrong**：查询时用模块级缓存保存命令快照 → `/mc_kb_dump` 后不重启看不到新命令
+  **Correct**：每次查询重读已发布文件（`_vanilla_cache` 只用于随插件分发的固定清单）
+- **Wrong**：运行时同根继承内置 `desc` 只用于显示、打分时仍只看 name/usage → 快照保存过全部原版根后，
+  中文描述搜索整体失效（内置行已被同根跳过）
+  **Correct**：`desc` 与 usage 一起参与匹配（`kb/commands.py` 的 `_score_runtime`），并保留"合并根能按中文 desc 命中"的回归用例

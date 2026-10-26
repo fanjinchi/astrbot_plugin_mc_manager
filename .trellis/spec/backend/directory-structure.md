@@ -48,10 +48,11 @@ astrbot_plugin_mc_manager/
 │   ├── builder.py          # 编排扫描→原版→CFPA→自定义→dump→落库→统计
 │   ├── store.py            # SQLite schema + 读写（每次操作各自连接）
 │   ├── query.py            # 查询/回执/状态的对外文案
-│   └── commands.py         # 命令知识库查询：原版内置清单 + 可选模组导出合并（与物品库无配置依赖）
+│   └── commands.py         # 命令知识库：原版内置清单 + 运行时命令快照（校验/原子发布/导入/查询）
 ├── assets/
 │   ├── vanilla_commands.json   # 原版命令固定知识库（随插件分发，非派生缓存）
-│   └── runtime_dump.js         # KubeJS 运行时注册表导出脚本（可选增强，JsonIO 直写 *.json）
+│   └── runtime_dump.js         # KubeJS 运行时注册表 + 命令树导出脚本（可选增强，JsonIO 直写 *.json）
+├── tests/                  # 标准库 unittest 离线回归（快照契约/回执/物品 dump 忽略命令快照）
 ├── _conf_schema.json       # AstrBot WebUI 配置 schema（配置项唯一来源）
 ├── metadata.yaml           # 插件元信息（name/desc/author/version/repo）
 ├── requirements.txt        # 运行时依赖，目前只有 aio-mc-rcon
@@ -81,6 +82,7 @@ astrbot_plugin_mc_manager/
 | 新增一条 MC 命令能力 | `tools/` 最接近的模块加 `async def`，再在 `main.py` 包一层 `@filter.llm_tool` |
 | 新增一个 LLM 工具 | `main.py` 的 `tool_*`；实现下沉到 `tools/` |
 | 新增知识库能力（扫新来源/新查询） | `kb/` 对应模块；装配仍只在 `main.py` |
+| 改命令快照契约 / 查询聚合 | `kb/commands.py`（校验、原子发布、导入、聚合都在这里）；生产者侧改动见 runtime-dump.md |
 | 新增运行时 dump / 知识库重建编排 | `runtime_dump.py`（编排 + 纯函数）；指令仍在 `main.py` |
 | 新增配置项 | `_conf_schema.json` + `main.py.__init__` 里 `self.config.get(...)` |
 | 新增 MC 日志事件 | `log_watcher.py` 加 `*_PATTERN` 常量 + 回调字段 + `set_*_callback` + `_process_log_line` 分支；`main.py` 加 `_on_*`，按需 `_forward_to_bound_group` / `_send_system_event` 上报 |
