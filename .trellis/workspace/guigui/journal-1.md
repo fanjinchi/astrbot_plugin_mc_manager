@@ -131,3 +131,29 @@
 ### Next Steps
 
 - 本地还有 archive/journal 两个提交未 push；如需远端同步可 git push origin master
+
+
+## Session 5: 模组命令树导入与命令搜索落地（KubeJS 主路径）
+<!-- trellis-session: v=2 fp=f795c7248a3e9704 -->
+
+**Date**: 2026-10-26
+**Task**: 模组命令树导入与命令搜索落地（KubeJS 主路径）
+**Branch**: `master`
+
+### Summary
+
+实现 KubeJS 命令树导出与命令知识库查询：runtime_dump.js RD_VERSION=3 用 getAllUsage(restricted=false) 导出 commands.json（扁平 usage、redirect 拆分、失败隔离）；kb/commands.py 做快照校验/去重排序/原子发布(mkstemp)/导入/查询聚合（根合并只继承 desc/cat、limit 按根、每根 8 条、producer 降级提示、无进程缓存）；接入 KnowledgeBase.rebuild 与 RuntimeDumpRunner 回执；新建 tests/（38 个 unittest + Node 桩跑真实 KJS 脚本）。两轮独立评审 + 修复轮复核：修掉 1 个 P0（快照存在后内置中文描述搜索整体失效）与 7 个 P2（误导文案、0 字节 commands 告警、固定 tmp 并发、重建失败丢命令告警、外部 dispatcher root 的 prefix -> 解析、用例缺口、spec 行号/README 措辞）。真机：CTI0.46 1.19.2 用隔离副本（改端口/超平坦世界，测后删除）188 根 / 2061 usage / 93 redirect，物品 27,643 条不回归、二次触发幂等；Farming 1.20.1 原服（Java 21）193 根 / 2248 usage / 109 redirect，wine age <years> 与 wine info 可查，幂等；Farming 测后还原配置与痕迹，线上 CTI 未被写入。剩余：AstrBot 重载后生产生效、跨机复制与坏快照线上演练、子任务二 RCON help 回退。
+
+### Git Commits
+
+| Hash | Message |
+|------|---------|
+| `fa32f49` | feat(kb): 导入模组命令树并支持命令搜索 |
+| `df48fb0` | docs(spec): 补充命令快照跨层契约 |
+| `7018f61` | chore(task): 记录命令知识库任务与评审修复 |
+| `7140012` | chore(task): 补充隔离真机验证证据 |
+| `b4233d9` | chore(task): 补充 1.20.1 真机验证证据 |
+
+### Status
+
+[OK] **Completed**
