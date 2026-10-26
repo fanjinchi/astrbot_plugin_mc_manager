@@ -1,0 +1,6 @@
+{"file":".trellis/spec/backend/index.md","reason":"质量检查规范入口。"}
+{"file":".trellis/spec/backend/quality-guidelines.md","reason":"编译、真机验证、权限和反过度工程检查。"}
+{"file":".trellis/spec/backend/error-handling.md","reason":"错误边界、RCON 返回语义和失败隔离检查。"}
+{"file":".trellis/spec/backend/runtime-dump.md","reason":"核对四类旧契约未回归并更新 commands 契约。"}
+{"file":".trellis/tasks/10-25-mod-command-kb/prd.md","reason":"最终按父 AC1–AC6 验收。"}
+{"file":".trellis/tasks/10-25-mod-command-kb/design.md","reason":"核对共享 schema、原子发布、查询合并与生产者优先级。"}

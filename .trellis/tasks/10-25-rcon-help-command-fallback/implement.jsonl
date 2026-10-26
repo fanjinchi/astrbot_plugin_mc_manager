@@ -1,0 +1,6 @@
+{"file":".trellis/spec/backend/index.md","reason":"Backend 规范入口。"}
+{"file":".trellis/spec/backend/runtime-dump.md","reason":"复用现有 RCON 与命令发布契约，避免第二套链路。"}
+{"file":".trellis/spec/backend/quality-guidelines.md","reason":"异步、RCON 真机验证和依赖约束。"}
+{"file":".trellis/spec/backend/error-handling.md","reason":"超时、重连、错误返回和不重发纪律。"}
+{"file":".trellis/tasks/10-25-mod-command-kb/design.md","reason":"共享 commands.json、原子发布和生产者显式优先级。"}
+{"file":".trellis/tasks/10-25-rcon-help-command-fallback/research/01-command-enumeration.md","reason":"HelpCommand 语义、传输阻塞点和方案排除证据。"}

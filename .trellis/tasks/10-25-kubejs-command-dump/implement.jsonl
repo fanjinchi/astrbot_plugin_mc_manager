@@ -1,0 +1,7 @@
+{"file":".trellis/spec/backend/index.md","reason":"Backend 规范入口。"}
+{"file":".trellis/spec/backend/runtime-dump.md","reason":"必须同步的 KubeJS/RCON/builder 交叉契约。"}
+{"file":".trellis/spec/backend/directory-structure.md","reason":"命令知识库与 dump 编排的模块边界。"}
+{"file":".trellis/spec/backend/quality-guidelines.md","reason":"Python 3.10+、验证和避免过度工程约束。"}
+{"file":".trellis/spec/backend/error-handling.md","reason":"失败返回、日志与 RCON 错误语义。"}
+{"file":".trellis/tasks/10-25-mod-command-kb/design.md","reason":"两个生产者共享的 snapshot、发布、查询和优先级设计。"}
+{"file":".trellis/tasks/10-25-kubejs-command-dump/research/01-kubejs-api.md","reason":"已核实的活动 dispatcher、getAllUsage、Rhino 与双版本证据。"}

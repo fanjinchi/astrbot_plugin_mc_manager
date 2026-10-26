@@ -1,0 +1,6 @@
+{"file":".trellis/spec/backend/quality-guidelines.md","reason":"检查编译、真机证据、权限和聚焦测试。"}
+{"file":".trellis/spec/backend/error-handling.md","reason":"检查命令/物品故障隔离和旧缓存保留。"}
+{"file":".trellis/spec/backend/runtime-dump.md","reason":"核对 RD_VERSION、DONE、JsonIO 和 builder 兼容。"}
+{"file":".trellis/tasks/10-25-mod-command-kb/design.md","reason":"按共享 schema、查询和原子发布设计验收。"}
+{"file":".trellis/tasks/10-25-kubejs-command-dump/prd.md","reason":"逐条核对子任务 AC1–AC7。"}
+{"file":".trellis/tasks/10-25-kubejs-command-dump/research/01-kubejs-api.md","reason":"核对 restricted=false、redirect 和原生能力边界。"}

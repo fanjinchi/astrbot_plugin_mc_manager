@@ -1,0 +1,6 @@
+{"file":".trellis/spec/backend/quality-guidelines.md","reason":"检查 RCON 真机证据和通用性。"}
+{"file":".trellis/spec/backend/error-handling.md","reason":"检查超时、错 id、重连和失败关闭。"}
+{"file":".trellis/spec/backend/runtime-dump.md","reason":"检查普通 RCON 与 dump 契约不回归。"}
+{"file":".trellis/tasks/10-25-mod-command-kb/design.md","reason":"核对共享发布契约和 KubeJS 优先级。"}
+{"file":".trellis/tasks/10-25-rcon-help-command-fallback/prd.md","reason":"逐条核对 RCON fallback AC1–AC7。"}
+{"file":".trellis/tasks/10-25-rcon-help-command-fallback/research/01-command-enumeration.md","reason":"核对多包、无换行、自定义 help 和差分边界。"}

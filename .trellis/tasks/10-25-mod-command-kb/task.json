@@ -1,0 +1,30 @@
+{
+  "id": "mod-command-kb",
+  "name": "mod-command-kb",
+  "title": "模组命令知识库运行时导入",
+  "description": "通过 KubeJS 结构化导出与 RCON help 回退采集，让 search_mc_commands 查询真实模组命令及参数语法",
+  "status": "planning",
+  "dev_type": null,
+  "scope": null,
+  "package": null,
+  "priority": "P2",
+  "creator": "guigui",
+  "assignee": "guigui",
+  "createdAt": "2026-10-25",
+  "completedAt": null,
+  "branch": null,
+  "base_branch": "master",
+  "worktree_path": null,
+  "commit": null,
+  "pr_url": null,
+  "subtasks": [],
+  "children": [
+    "10-25-kubejs-command-dump",
+    "10-25-rcon-help-command-fallback",
+    "10-26-command-intent-search"
+  ],
+  "parent": null,
+  "relatedFiles": [],
+  "notes": "",
+  "meta": {}
+}
