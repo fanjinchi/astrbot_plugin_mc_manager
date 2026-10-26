@@ -77,14 +77,31 @@ ruff check .       # 见下方偏差说明
   仅剩 2 处 P2 已收：`runtime-dump.md` 行号 238→242、150→150-153；权限显示文案按"全量快照下原版根被覆盖、
   权限显示未知"修正（README + `search_mc_commands` 描述），并在 spec 标注 `_trigger`/`execute_async` 用例为待补。
 
-## 真机验证（已授权，待沙箱批准）
+## 真机验证（2026-10-26，隔离副本方式）
 
-- [ ] CTI0.46 / 1.19.2：备份现有部署脚本并临时移走数据目录旧 canonical；首轮只执行一次 `/mc_kb_dump`，不得手工补跑 `/mc_kb_rebuild`；由既有 RuntimeDumpRunner rebuild 回调完成发布/重建，立即验证 `researchdump`、`execute` 多分支可通过 `search_mc_commands` 查询，DONE 含 commands，四类原 dump 与物品重建不回归；再执行一次 `/mc_kb_dump` 验证幂等无重复。
-- [ ] Farming / 1.20.1：记录初始状态并按现有启动方式启动，部署/reload/触发；验证 `wine info`、`wine age <years>` 可查，redirect 不被当作完整命令。
-- [ ] 在两实例测试坏/旧快照保留和重复 dump 幂等；记录 counts、文件大小、耗时、failed 和查询样例。
-- [ ] 汇总真机证据；Farming 若原本停止，不擅自 stop，报告最终运行状态。
+> 线上实例 `/home/guigui/mc/CTI0.46` **全程只读**。做法：把服务器复制到 `/home/guigui/mc/CTI-verify-run`
+> （rsync 排除 world/backups/logs/runtime_dump，949 MB，`ionice -c3 nice -n 10`），改独立端口
+> server-port 21335 / rcon.port 25576、`verifyworld` 超平坦世界，部署新版脚本后启动副本，跑完
+> `/mc_kb_dump` 主路径再停服并删除。脚本：`verify_copy.sh prep|run`（`run` 的 trap 保证停服+删除）。
 
-执行入口（一次命令，需要 danger-full-access 批准）：
+- [x] **CTI0.46 / 1.19.2（副本）**：首启 `Done (1.809s)`；一次 `RuntimeDumpRunner` 流程完成导出 + 重建，
+  未手工补跑 `/mc_kb_rebuild`。证据：
+  - `[rd] DONE {"version":"3","duration_ms":256,"counts":{"item":16043,"block":9729,"entity":826,"fluid":1045,"commands":2061},"failed":[]}`
+  - `commands.json` 274,520 B，`kind=commands schema=1 producer=kubejs count=2061 roots=188 redirects=93`
+  - 动态命令 `researchdump` 在根集合内，且 `search_mc_commands("researchdump")` 命中
+  - `search_mc_commands("execute")` 返回 28 条 usage（显示 8 条 + 「另有 20 条」）与
+    `execute ... -> execute` 形式的 redirect 提示，未被当作可执行命令串；
+    `search_mc_commands("weather")` 返回 6 条真实 usage，并继承内置中文描述「设置天气」，
+    来源/权限显示未知（符合 AC4）
+  - 物品 dump 未回退：item 16043 / block 9729 / entity 826 / fluid 1045，合计 27,643（与线上既有产物一致）；
+    物品知识库重建 5.8s / 26,203 条；4 个 dump 文件合并 27,643 次
+  - 幂等：第二次触发 counts 完全一致（commands 2061），查询结果中 `/researchdump` 只出现 1 次
+  - 副本已 `stop` 并 `rm -rf`，21335/25576 释放；原服脚本 sha `b8e213f0…`（旧 v2）与 `runtime_dump/`
+    （无 commands.json）均未被改动
+- [ ] **Farming / 1.20.1（副本）**：未执行（Farming 原本停止；可按同样方式复制副本验证 `wine info` / `wine age <years>`）。
+- [ ] 坏/旧快照保留：由离线用例覆盖，未在副本上单独演练。
+
+直接在生产目录跑（会写入线上目录，需明确批准）：
 
 ```bash
 /home/guigui/code/AstrBot/.venv/bin/python \
@@ -93,11 +110,13 @@ ruff check .       # 见下方偏差说明
   --data-dir /home/guigui/code/AstrBot/data/plugin_data/astrbot_plugin_mc_manager
 ```
 
-注意：AstrBot 里跑的还是旧版插件代码，真机验证前需要重载插件/重启 AstrBot 才能加载本期 Python 改动。
+注意：AstrBot 里跑的还是旧版插件代码，要让 `/mc_kb_dump` 用上新逻辑需要重载插件/重启 AstrBot。
 
 ## Review / Finish gates
 
-- [ ] 对照父 AC1–AC5 和本子任务全部 AC；任何未实测项明确保留，不宣称完成。
+- [x] 对照父 AC1–AC5 和本子任务全部 AC：CTI0.46 副本已覆盖 AC1（真实导出 2061 条/188 根）、AC2（`researchdump` 可查）、
+  AC3（首轮一次 dump 即查询、二次触发幂等无重复）、AC4（同根继承 desc、来源/权限未知、不重复）、AC5（四类 dump 与物品重建不回归）、
+  AC7（38 个离线用例 + 文档）；AC6 的失败关闭由离线用例覆盖。**未覆盖并明确保留**：Farming 1.20.1 真机、跨机复制演练。
 - [ ] 分派独立 spec/standards review 与 `trellis-check`，问题回原分支修复。
 - [x] 将稳定的新契约更新到 `.trellis/spec/backend/`：把 quality-guidelines 里「本项目没有测试套件」改为 `tests/` 用标准库 unittest，并修正「没有 lint 配置」的过时表述以反映 AstrBot 根项目 ruff 配置；commit 仅在有明确用户要求时执行。
 - [ ] 子任务验收后归档，再允许父任务启动 RCON fallback。
