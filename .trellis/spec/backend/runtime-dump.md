@@ -22,7 +22,7 @@
 | 完成反馈 | 单行 `[rd] DONE {"version","duration_ms","counts","failed"}`；整体异常 `[rd] FAIL <原因>` | `assets/runtime_dump.js:151-153` |
 | builder 读取 | `_load_runtime_dumps(server_dir, data_dir, rows, warnings) -> dict`；`_read_dump_objects(path) -> list|None`；名为 `commands` 的 stem 直接跳过 | `kb/builder.py:167/142` |
 | 命令快照发布/导入 | `publish_snapshot(snapshot, data_dir)`（mkstemp + `os.replace` 原子替换）、`import_snapshot(server_dir, data_dir) -> {status,count,roots,producer,warning}` | `kb/commands.py:143/169` |
-| 命令快照读取/查询 | `load_snapshot(data_dir) -> (snapshot, warning)` 每次查询重读；`search_commands(keyword, limit, data_dir)` 聚合 | `kb/commands.py:213/339` |
+| 命令快照读取/查询 | `load_snapshot(data_dir) -> (snapshot, warning)` 每次查询重读；`search_commands(keyword, limit, data_dir)` 聚合 | `kb/commands.py:226/386` |
 
 ## 3. Contracts
 
@@ -49,6 +49,17 @@
 - 命令条目不计入物品 dump 文件数：`_load_runtime_dumps` 在空文件告警**之前**跳过 stem 为 `commands` 的文件
   （否则会抑制 `kubejs_hint`、虚报 dump 文件数，0 字节的空快照还会进物品告警）。
 - `gameDirectory` 必须等于 `mc_server_dir`（启动脚本先 `cd`），否则文件写到别处
+
+### 3.1.1 查询语义（两种 producer 共用）
+- 关键词按空白、下划线、连字符拆成**无序 token**，连续分隔符不产生空 token；比较时两侧都忽略空白/下划线/连字符，
+  所以 `channel mode` / `channel_mode` / `channel-mode` 都能命中 `channelmode`（`kb/commands.py:320/325`）。
+- 根级采用**全 token AND**：每个 token 至少命中该根的 name/desc/usage/redirect 之一才返回；可以分别落在不同字段。
+- 普通 usage 只有**同一条语法覆盖全部 token** 才进入优先展示（`matched`），否则不因多词查询把无关 usage 顶到最前。
+- 精确/前缀/包含三档用整条归一化查询与根名比较（`_rank`），runtime 与 vanilla 共用同一口径。
+- `->` 是 redirect 结构标记：分词前用哨兵保护不被拆开；显式 `->` 只匹配 redirect 结构，不拿 name/usage/desc 凑命中。
+  redirect 仅作别名提示，永不进入普通 `matched` usage。
+- 已知限制：多 token 查询的整条归一化串通常不等于/不前缀于根名，因此多词查询多半落在第 4 档、
+  按根名排序；短 token（如 `mc`）在忽略分隔符后可能跨词边界假命中（`team create`）。单根 8 条上限不变。
 
 ### 3.2 完成信号
 - RCON 响应 = 命令执行结束后 `RconConsoleSource` 的缓冲，所以 `[rd] DONE` 出现即完成；**不用标记文件、不轮询、不做就绪探测**
@@ -92,7 +103,10 @@
   原子替换失败保留旧快照（无残留临时文件）、导入 missing/published/invalid/error、legacy JSONL 仅无 canonical 时读取、
   根合并（只继承 desc/cat，source/level 未知）、**合并根必须能用继承的中文 desc 搜到**（回归 P0）、仅根 usage、
   根+子 usage、redirect 提示、限流按根计数、8 条用量上限、`producer=rcon` 降级提示、坏快照告警、
-  快照存在时的无结果文案、物品重建失败时命令告警仍进回执
+  快照存在时的无结果文案、物品重建失败时命令告警仍进回执、
+  **多词无序 token AND**（分隔符等价、`->` 结构 token、竞争根只覆盖部分 token 时不得误返回）、
+  同一条 usage 覆盖全部 token 才优先展示（`mek` 基线折叠 vs 多词命中上浮）、
+  继承中文 desc 与 usage 的跨字段命中不拼成 matched usage、同义缺口查询（`clear radiation`）允许无结果
 - `_format_counts`（`tests/test_runtime_dump.py`）：commands 不并入物品总数
 - `assets/runtime_dump.js`（`tests/test_dump_script.py` + `tests/js_dump_harness.js`，Node 桩执行真实脚本）：
   五类产物、RD_VERSION=3、五种 usage 形态（含外部 root 的 `prefix ->`）、dispatcher 抛错时只污染 `failed`、产物过 Python 契约校验
@@ -114,3 +128,8 @@
 - **Wrong**：运行时同根继承内置 `desc` 只用于显示、打分时仍只看 name/usage → 快照保存过全部原版根后，
   中文描述搜索整体失效（内置行已被同根跳过）
   **Correct**：`desc` 与 usage 一起参与匹配（`kb/commands.py` 的 `_score_runtime`），并保留"合并根能按中文 desc 命中"的回归用例
+- **Wrong**：多词查询按整串包含匹配（`quest editing` 只有词序恰好连续才命中），或把"根里任意 usage 命中任一 token"算作优先展示
+  **Correct**：拆成无序 token 做根级 AND，只有同一条语法覆盖全部 token 的 usage 才进 `matched`
+- **Wrong**：归一化时直接用 `-`/空格 split 拆 `->`，或把显式 `->` 当普通子串去匹配 name/usage
+  **Correct**：`->` 用哨兵保护整体保留，显式 `->` 只匹配 redirect 结构（`kb/commands.py:346-351`），
+  且 redirect 不进入普通 `matched` usage

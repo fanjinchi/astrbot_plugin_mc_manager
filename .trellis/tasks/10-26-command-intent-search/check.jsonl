@@ -1,0 +1,20 @@
+{"file":".trellis/spec/backend/quality-guidelines.md","reason":"核对工具契约、只读权限、验证命令和改动文件 ruff 边界。"}
+{"file":".trellis/spec/backend/runtime-dump.md","reason":"核对两种 producer、快照查询和兼容行为没有回归。"}
+{"file":".trellis/spec/backend/error-handling.md","reason":"核对无结果、坏快照和工具返回字符串语义。"}
+{"file":".trellis/spec/backend/directory-structure.md","reason":"核对 main.py 只负责工具入口，匹配逻辑位于 kb/commands.py。"}
+{"file":".trellis/tasks/10-26-command-intent-search/prd.md","reason":"逐项复核 token AND、5 条 AC4 查询、离线先行与完成/归档门槛。"}
+{"file":".trellis/tasks/10-26-command-intent-search/research/01-intent-retrieval.md","reason":"逐项复核离线证据、非目标能力和真实模型 5/5 验收。"}
+{"file":".trellis/tasks/10-25-mod-command-kb/prd.md","reason":"核对父任务 AC 与第三子任务完成条件。"}
+{"file":".trellis/tasks/10-25-mod-command-kb/design.md","reason":"核对共享查询契约、8 条 usage 上限和三子任务边界。"}
+{"file":".trellis/tasks/archive/2026-10/10-25-kubejs-command-dump/prd.md","reason":"确认代码依赖已归档完成，快照缺口不是未实施。"}
+{"file":".trellis/tasks/archive/2026-10/10-25-kubejs-command-dump/design.md","reason":"核对共享 schema、原子发布和查询合并。"}
+{"file":".trellis/tasks/archive/2026-10/10-25-kubejs-command-dump/implement.md","reason":"核对双版本历史证据，不以历史 count/root 数替代新快照。"}
+{"file":".trellis/tasks/archive/2026-10/10-25-kubejs-command-dump/verify_live.py","reason":"核对 AC4 新文件、逐项 syntax、count 和 SHA-256 的记录方法。"}
+{"file":".trellis/tasks/archive/2026-10/10-25-kubejs-command-dump/verify_copy.sh","reason":"核对分别发布到隔离 data_dir 的方法和清理行为。"}
+{"file":".trellis/tasks/archive/2026-10/10-25-kubejs-command-dump/verify_farming.sh","reason":"核对 Farming 验证产物清理与当前真实快照缺口。"}
+{"file":"main.py","reason":"检查工具 docstring 的英文调用引导和空结果英文提示。"}
+{"file":"kb/commands.py","reason":"检查从当前整串匹配到 token AND 的最小改动、归一化、排名、matched usage 和无扩张语义。"}
+{"file":"kb/__init__.py","reason":"检查两个隔离 data_dir 的真实快照读取路径。"}
+{"file":"tests/test_commands.py","reason":"运行 final search_commands 断言、vanilla、redirect 和 producer 回归。"}
+{"file":"tests/test_runtime_dump.py","reason":"运行快照导入和失败不覆盖旧缓存回归。"}
+{"file":"assets/vanilla_commands.json","reason":"核对原版中文搜索仍保留。"}

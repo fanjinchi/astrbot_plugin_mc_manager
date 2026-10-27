@@ -640,9 +640,16 @@ class MCManagerPlugin(Star):
         返回命令语法、说明和权限等级（运行时条目的权限显示为未知）。运行时语法来自服务端当前命令树（已注册路径不代表当前调用者必然可执行；
         RCON help 回退快照的深层分支是压缩语法）。准备调用 execute_command 但不确定命令怎么写时先用它查。
         
+        关键词写法很重要：内置原版命令有中文描述，可以直接用中文（「封禁」）；模组命令只有英文命令名和
+        参数语法，没有中文说明，中文意图要自己先提炼成一两个简短英文概念词（「陈酿」→ wine、
+        「传送石碑」→ waystone、「清辐射」→ radiation removeAll），不要直接搜整句中文。
+        多个英文词用空格隔开即可，顺序不限、会同时要求命中同一根（quest editing 等价 editing quest）；
+        channel mode / channel_mode / channel-mode 都能命中 channelmode。没命中就换更短的词或英文近义
+        说法，命中根后再用子命令/参数词细化（「只看某个子命令怎么写」也用它）。
+        
         Args:
-            keyword(string): 搜索关键词，如「封禁」「ban」「weather」「传送」
-            limit(number): 最多返回条数，默认8
+            keyword(string): 搜索关键词：原版命令可用中文描述，模组命令用英文词，如「封禁」「weather」「waystone list」
+            limit(number): 最多返回条数（按根命令计数），默认8
         """
         data_dir = self.kb.data_dir if self.kb is not None else None
         return cmd_kb.search_commands(keyword, limit, data_dir=data_dir)

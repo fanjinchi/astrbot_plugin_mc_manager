@@ -178,7 +178,8 @@ LLM 不确定命令写法时会先查 `search_mc_commands` 内置命令知识库
 ### 🟢 信息查询（🆓 无需权限）
 - ✅ 查看在线玩家（list_players）
 - ✅ 搜索物品/方块/实体知识库（search_mc_items）
-- ✅ 搜索MC命令用法（search_mc_commands）：内置原版清单 + 服务器导出的模组命令树，支持命令名/中文描述/参数语法搜索
+- ✅ 搜索MC命令用法（search_mc_commands）：内置原版清单 + 服务器导出的模组命令树；原版命令可直接用中文描述搜，
+  模组命令用英文根名/参数概念词搜（中文意图先提炼成英文词，多个词空格隔开、顺序不限）
 
 ### 🎮 高频游戏操作（🔒）
 - ✅ 给予物品（give_item）：支持模组物品完整ID；配置 `enable_public_give_item` 可放开给普通玩家（免权限）
@@ -276,7 +277,10 @@ AstrBot 与 MC 不同机时，把 `runtime_dump/` 目录拷到插件数据目录
 同一份 dump 会把服务端当前命令树导出为 `runtime_dump/commands.json`（`kind=commands`，
 `producer=kubejs`），并由 `/mc_kb_dump` 或 `/mc_kb_rebuild` 发布到插件数据目录。
 之后 `search_mc_commands` 能按根命令名或参数语法查到模组命令（如 `wine info` / `wine age <years>`），
-没有快照时仍按内置原版清单回答。边界：
+没有快照时仍按内置原版清单回答。模组命令只有英文命令名与参数语法、没有中文说明，中文意图需要调用方
+先提炼成英文概念词（「陈酿」→ `wine`、「传送石碑」→ `waystone`）；多词查询按空格拆成无序 token
+全部命中同一根才返回（`quest editing` 与 `editing quest` 等价），`channel mode` / `channel_mode` /
+`channel-mode` 都命中 `channelmode`，同根内覆盖全部 token 的 usage 优先展示。边界：
 
 - 语法来自当前 dispatcher 已注册的完整 usage 路径（`getAllUsage(..., restricted=false)`），
   **不代表当前 RCON/玩家必然可执行**：实际执行仍受权限等级、命令来源和执行体内部检查限制。

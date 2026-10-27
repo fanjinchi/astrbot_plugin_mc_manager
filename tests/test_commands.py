@@ -32,6 +32,20 @@ def _snapshot(entries, producer="kubejs"):
     }
 
 
+def _sections(text):
+    """把查询结果拆成 {根命令: [该根实际展示的 usage 行]}，只解析最终输出文本。"""
+    sections = {}
+    current = None
+    for line in text.splitlines():
+        stripped = line.strip()
+        if stripped.startswith("- /"):
+            current = stripped[3:].split(" ")[0]
+            sections[current] = []
+        elif stripped.startswith("·") and current:
+            sections[current].append(stripped[1:].strip())
+    return sections
+
+
 class ValidateSnapshotTest(unittest.TestCase):
     def test_normalizes_dedupes_and_sorts(self):
         snapshot, reason = commands.validate_snapshot(
@@ -331,6 +345,235 @@ class SearchCommandsTest(unittest.TestCase):
         self._publish([_entry("newcmd", "newcmd run")])
         text = commands.search_commands("oldcmd", data_dir=self.data)
         self.assertIn("未找到", text)
+
+
+class IntentSearchTest(unittest.TestCase):
+    """AC2：中文意图提炼出的英文多词查询必须召回目标根与目标 usage。
+
+    断言最终 search_commands 文本（不传 limit，用默认 8），不检查内部评分。
+    固定夹具里的 competitor_* 根各只覆盖一个概念 token，用于证明根级 AND 不误放行。
+    """
+
+    def setUp(self):
+        self.data = tempfile.mkdtemp()
+        self.addCleanup(
+            lambda: __import__("shutil").rmtree(self.data, ignore_errors=True)
+        )
+
+    def _publish(self, entries):
+        snapshot, reason = commands.validate_snapshot(_snapshot(entries))
+        self.assertEqual(reason, "")
+        ok, detail = commands.publish_snapshot(snapshot, self.data)
+        self.assertTrue(ok, detail)
+
+    def _search(self, keyword):
+        return _sections(commands.search_commands(keyword, data_dir=self.data))
+
+    def _intent_entries(self):
+        entries = [
+            _entry("ftbquests", "ftbquests editing_mode <enabled> <player>"),
+            _entry("competitor_quest", "competitor_quest list"),
+            _entry("competitor_editing", "competitor_editing on"),
+            _entry("waystones", "waystones list <player> all"),
+            _entry("competitor_waystone", "competitor_waystone info"),
+            _entry("competitor_list", "competitor_list"),
+            _entry("ae2", "ae2 channelmode x2"),
+            _entry("competitor_channel", "competitor_channel status"),
+            _entry("competitor_mode", "competitor_mode"),
+            _entry("competitor_radiation", "competitor_radiation add"),
+            _entry("competitor_remove", "competitor_remove"),
+        ]
+        # mek 至少 10 条普通 usage；排序后目标前有 9 条，单 token 基线必然被 8 条上限折叠
+        for suffix in (
+            "alpha",
+            "beta",
+            "delta",
+            "epsilon",
+            "gamma",
+            "iota",
+            "kappa",
+            "lambda",
+            "mu",
+        ):
+            entries.append(_entry("mek", "mek %s" % suffix))
+        entries.append(_entry("mek", "mek radiation removeAll"))
+        entries.append(_entry("mek", "mek zeta"))
+        return entries
+
+    def test_multi_token_queries_recall_target_root_and_usage(self):
+        self._publish(self._intent_entries())
+        cases = {
+            "quest editing": ("ftbquests", "ftbquests editing_mode <enabled> <player>"),
+            "editing quest": ("ftbquests", "ftbquests editing_mode <enabled> <player>"),
+            "waystone list": ("waystones", "waystones list <player> all"),
+            "channel mode": ("ae2", "ae2 channelmode x2"),
+            "radiation removeAll": ("mek", "mek radiation removeAll"),
+            "remove radiation": ("mek", "mek radiation removeAll"),
+        }
+        competitors = {
+            "quest editing": ("competitor_quest", "competitor_editing"),
+            "editing quest": ("competitor_quest", "competitor_editing"),
+            "waystone list": ("competitor_waystone", "competitor_list"),
+            "channel mode": ("competitor_channel", "competitor_mode"),
+            "radiation removeAll": ("competitor_radiation", "competitor_remove"),
+            "remove radiation": ("competitor_radiation", "competitor_remove"),
+        }
+        for keyword, (root, syntax) in cases.items():
+            with self.subTest(keyword=keyword):
+                sections = self._search(keyword)
+                self.assertIn(root, sections)
+                self.assertEqual(sections[root][0], syntax)
+                for competitor in competitors[keyword]:
+                    self.assertNotIn(competitor, sections)
+
+    def test_mek_baseline_collapses_then_matched_usage_moves_first(self):
+        self._publish(self._intent_entries())
+        target = "mek radiation removeAll"
+        baseline = self._search("mek")["mek"]
+        self.assertEqual(len(baseline), commands.USAGE_PER_ROOT)
+        self.assertNotIn(target, baseline)  # 单根 8 条上限内看不到，必须细化关键词
+        for keyword in ("radiation removeAll", "remove radiation"):
+            with self.subTest(keyword=keyword):
+                bullets = self._search(keyword)["mek"]
+                self.assertEqual(bullets[0], target)
+                self.assertIn("mek alpha", bullets)
+                self.assertLess(bullets.index(target), bullets.index("mek alpha"))
+
+    def test_default_limit_still_counts_roots_and_keeps_exact_root(self):
+        entries = [_entry("common", "common status")]
+        entries.extend(
+            _entry("common_%02d" % index, "common_%02d status" % index)
+            for index in range(1, 9)
+        )
+        self._publish(entries)
+        sections = self._search("common")
+        self.assertEqual(len(sections), 8)
+        self.assertEqual(list(sections)[0], "common")
+
+
+class IntentBoundaryTest(unittest.TestCase):
+    """AC3：分隔符归一、精确根优先级、redirect 结构与跨字段 AND 的边界。"""
+
+    def setUp(self):
+        self.data = tempfile.mkdtemp()
+        self.addCleanup(
+            lambda: __import__("shutil").rmtree(self.data, ignore_errors=True)
+        )
+
+    def _publish(self, entries):
+        snapshot, reason = commands.validate_snapshot(_snapshot(entries))
+        self.assertEqual(reason, "")
+        ok, detail = commands.publish_snapshot(snapshot, self.data)
+        self.assertTrue(ok, detail)
+
+    def _search(self, keyword):
+        return _sections(commands.search_commands(keyword, data_dir=self.data))
+
+    def test_separator_variants_hit_same_usage(self):
+        self._publish(
+            [
+                _entry("ae2", "ae2 channelmode x2"),
+                _entry("competitor_channel", "competitor_channel status"),
+            ]
+        )
+        for keyword in (
+            "channel mode",
+            "channel_mode",
+            "channel-mode",
+            "channelmode",
+            "channel__mode",
+            "Channel Mode",
+        ):
+            with self.subTest(keyword=keyword):
+                sections = self._search(keyword)
+                self.assertEqual(sections["ae2"][0], "ae2 channelmode x2")
+                self.assertNotIn("competitor_channel", sections)
+
+    def test_root_name_separator_variants_share_exact_priority(self):
+        self._publish(
+            [
+                _entry("botania-skyblock", "botania-skyblock island"),
+                # 命中全部 token 但只能落到包含档，用来验证精确根仍排在最前
+                _entry("botaniagarden", "botaniagarden skyblock help"),
+            ]
+        )
+        for keyword in (
+            "botania-skyblock",
+            "botania_skyblock",
+            "botania skyblock",
+            "botaniaskyblock",
+        ):
+            with self.subTest(keyword=keyword):
+                sections = self._search(keyword)
+                self.assertEqual(list(sections)[0], "botania-skyblock")
+                self.assertEqual(
+                    sections["botania-skyblock"], ["botania-skyblock island"]
+                )
+
+    def test_exact_prefix_contains_order_is_preserved(self):
+        self._publish(
+            [
+                _entry("afoo", "afoo"),
+                _entry("foo", "foo"),
+                _entry("foobar", "foobar"),
+            ]
+        )
+        self.assertEqual(list(self._search("foo")), ["foo", "foobar", "afoo"])
+
+    def test_redirect_queries_keep_alias_semantics(self):
+        self._publish(
+            [
+                _entry("alias", "alias", redirect="target"),
+                _entry("plain", "plain run"),
+            ]
+        )
+        for keyword in ("alias target", "alias -> target"):
+            with self.subTest(keyword=keyword):
+                sections = self._search(keyword)
+                self.assertIn("alias", sections)
+                self.assertNotIn("plain", sections)
+                self.assertEqual(
+                    sections["alias"], []
+                )  # redirect 不进入普通 matched usage
+        text = commands.search_commands("alias target", data_dir=self.data)
+        self.assertIn("重定向：alias -> target", text)
+        # 显式 -> 只认 redirect 结构，不拿命令名/usage 凑命中
+        self.assertEqual(set(self._search("->")), {"alias"})
+
+    def test_tokens_across_fields_recall_root_but_not_matched_usage(self):
+        self._publish(
+            [
+                _entry("mix", "mix aaa"),
+                _entry("mix", "mix beta"),
+                _entry("mix", "mix zeta"),
+            ]
+        )
+        sections = self._search("beta zeta")
+        self.assertIn("mix", sections)
+        # 两个 token 分别落在不同 usage 上：根级 AND 成立，但不能拼成优先展示的 usage
+        self.assertEqual(sections["mix"][0], "mix aaa")
+
+    def test_inherited_desc_and_usage_tokens_do_not_form_matched_usage(self):
+        # 真实风险场景：运行时根继承原版中文 desc，中文 token 命中 desc、英文 token 命中 usage
+        self._publish(
+            [
+                _entry("weather", "weather alpha"),
+                _entry("weather", "weather time <value>"),
+            ]
+        )
+        sections = self._search("天气 time")
+        self.assertIn("weather", sections)
+        # 没有任何一条 usage 同时覆盖「天气」和 time，不能被拼成优先展示
+        self.assertEqual(sections["weather"][0], "weather alpha")
+
+    def test_synonym_gap_query_is_allowed_to_return_nothing(self):
+        self._publish([_entry("mek", "mek radiation removeAll")])
+        text = commands.search_commands("clear radiation", data_dir=self.data)
+        self.assertIn("未找到", text)
+
+    def test_separator_only_query_returns_hint(self):
+        text = commands.search_commands("_-_", data_dir=self.data)
+        self.assertIn("请提供搜索关键词", text)
 
 
 class RebuildFailureNoteTest(unittest.TestCase):

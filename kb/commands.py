@@ -8,6 +8,7 @@
 
 import json
 import os
+import re
 import tempfile
 from typing import Optional
 
@@ -42,6 +43,18 @@ SNAPSHOT_NAME = "commands.json"
 LEGACY_NAME = "commands.jsonl"
 # 单根最多展示的 usage 行数：/execute 这类根有上百条路径，全列会淹没上下文
 USAGE_PER_ROOT = 8
+
+# 查询归一化：空白、下划线、连字符在比较时视为等价分隔（channel mode / channel_mode /
+# channel-mode / channelmode 命中同一 usage）。`->` 是 redirect 结构标记，先用哨兵保护，
+# 避免被当成普通连字符拆成空 token 和 ">"。
+_ARROW_SENTINEL = "\x00"
+_TOKEN_SPLIT = re.compile(r"[\s_\-]+")
+_SQUASH = re.compile(r"[\s_]+|-(?!>)")
+
+_EMPTY_QUERY_HINT = (
+    "请提供搜索关键词（命令名、中文描述或英文概念词，如「封禁」「weather」「waystone」）。"
+    "模组命令只有英文名与参数语法，中文意图请先提炼成简短英文词。"
+)
 
 _vanilla_cache = None
 
@@ -304,45 +317,86 @@ def _merge_with_vanilla(root: dict, vanilla_row: Optional[dict]) -> dict:
     return row
 
 
-def _score_runtime(row: dict, kw: str) -> tuple:
-    name = row["name"].lower()
+def _squash(text: Optional[str]) -> str:
+    """比较用归一化：小写并去掉空白、下划线、连字符（`->` 结构标记保留）。"""
+    return _SQUASH.sub("", (text or "").lower())
+
+
+def _split_query(query: str) -> list:
+    """把查询拆成无序 token；连续分隔符不产生空 token，`->` 整体保留。"""
+    protected = (query or "").lower().replace("->", _ARROW_SENTINEL)
+    tokens = [token for token in _TOKEN_SPLIT.split(protected) if token]
+    return [token.replace(_ARROW_SENTINEL, "->") for token in tokens]
+
+
+def _rank(name: str, query_norm: str) -> int:
+    """根名档位：精确 / 前缀 / 包含 / 仅内容命中；两种 producer 共用同一口径。"""
+    if name == query_norm:
+        return 0
+    if name.startswith(query_norm):
+        return 1
+    if query_norm in name:
+        return 2
+    return 3
+
+
+def _score_runtime(row: dict, tokens: list, query_norm: str) -> tuple:
+    """运行时根打分：所有 token 必须在该根任一可搜索字段命中，顺序无关。
+
+    精确/前缀/包含三档仍用整条归一化查询与根名比较（botania skyblock 与
+    botania-skyblock 等价）；redirect 只参与根级 AND 与提示，不进入普通 usage。
+    """
+    name = _squash(row.get("name"))
     # 运行时同根继承了内置 desc，必须让它参与匹配：getAllUsage 覆盖整棵 dispatcher，
     # 快照里包含全部原版根，下列内置行随后会被跳过，若不在这里搜 desc，中文搜索会整体失效
-    desc = (row.get("desc") or "").lower()
-    matched = [usage for usage in row["usages"] if kw in usage.lower()]
-    if name == kw:
-        return 0, matched
-    if name.startswith(kw):
-        return 1, matched
-    if kw in name:
-        return 2, matched
-    if matched or kw in desc or any(kw in hint.lower() for hint in row["redirects"]):
-        return 3, matched
-    return None, []
+    desc = _squash(row.get("desc"))
+    usages = [(_squash(usage), usage) for usage in row.get("usages") or []]
+    redirects = [_squash(hint) for hint in row.get("redirects") or []]
+    fields = [name, desc] + [norm for norm, _usage in usages] + redirects
+
+    for token in tokens:
+        if token == "->":
+            # 显式 -> 只认 redirect 结构，不能拿命令名/usage/desc 凑命中
+            if not any("->" in hint for hint in redirects):
+                return None, []
+            continue
+        if not any(token in field for field in fields):
+            return None, []
+
+    # 普通 usage 只有同一条语法覆盖全部 token 才进优先展示；
+    # 否则「quest editing」会把同根里只提到 editing 的无关 usage 顶到最前
+    matched = [
+        usage for norm, usage in usages if all(token in norm for token in tokens)
+    ]
+    return _rank(name, query_norm), matched
 
 
-def _score_vanilla(row: dict, kw: str) -> Optional[int]:
-    name = (row.get("name") or "").lower()
-    desc = (row.get("desc") or "").lower()
-    syntax = (row.get("syntax") or "").lower()
-    if name == kw:
-        return 0
-    if name.startswith(kw):
-        return 1
-    if kw in name:
-        return 2
-    if kw in desc or kw in syntax:
-        return 3
-    return None
+def _score_vanilla(row: dict, tokens: list, query_norm: str) -> Optional[int]:
+    name = _squash(row.get("name"))
+    desc = _squash(row.get("desc"))
+    syntax = _squash(row.get("syntax"))
+    for token in tokens:
+        if token == "->":
+            return None  # 内置条目没有 redirect 结构，单独 -> 不匹配
+        if not (token in name or token in desc or token in syntax):
+            return None
+    return _rank(name, query_norm)
 
 
 def search_commands(
     keyword: str, limit: int = 8, data_dir: Optional[str] = None
 ) -> str:
-    """按命令名/中文描述/参数语法模糊搜索，返回给 LLM 的文案。"""
-    kw = (keyword or "").strip().lower()
-    if not kw:
-        return "请提供搜索关键词（命令名或中文描述，如「封禁」「weather」）。"
+    """按命令名/中文描述/参数语法搜索，返回给 LLM 的文案。
+
+    关键词按空白、下划线、连字符拆成无序 token，每个 token 都要命中同一根（可以分别命中
+    根名、描述、usage 或 redirect）；普通 usage 只有整条语法覆盖全部 token 才优先展示。
+    显式 `->` 只匹配 redirect 结构，不拿命令名/usage 凑命中。
+    """
+    kw = (keyword or "").strip()
+    tokens = _split_query(kw)
+    if not tokens:
+        return _EMPTY_QUERY_HINT
+    query_norm = _squash(kw)
     try:
         limit = max(1, min(int(limit), 20))
     except (TypeError, ValueError):
@@ -367,13 +421,13 @@ def search_commands(
     results = []
     for name, root in roots.items():
         merged = _merge_with_vanilla(root, vanilla_by_name.get(name))
-        score, matched = _score_runtime(merged, kw)
+        score, matched = _score_runtime(merged, tokens, query_norm)
         if score is not None:
             results.append((score, name.lower(), merged, matched))
     for name, row in vanilla_by_name.items():
         if name in roots:
             continue  # 运行时同根已合并，避免 /forge 这类同名重复占位
-        score = _score_vanilla(row, kw)
+        score = _score_vanilla(row, tokens, query_norm)
         if score is not None:
             results.append((score, name.lower(), row, []))
     results.sort(key=lambda item: (item[0], item[1]))
@@ -386,14 +440,17 @@ def search_commands(
         if snapshot is not None:
             lines.append(
                 "未找到与「%s」相关的命令。当前已收录 %d 个运行时命令根（含原版命令树）"
-                "和 %d 个内置命令；模组命令只有英文命令名与参数语法，可换英文根名或参数词再试。"
+                "和 %d 个内置命令。模组命令只有英文命令名与参数语法、没有中文说明："
+                "请先把意图提炼成一两个英文概念词（如「陈酿」→ wine、「传送石碑」→ waystone），"
+                "多个词用空格隔开、顺序不限（如 quest editing）；仍没命中就换更短的词或英文近义说法，"
+                "命中根后再用子命令/参数词细化。内置原版命令照旧支持中文描述搜索。"
                 % (keyword, len(roots), len(vanilla_by_name))
             )
         else:
             lines.append(
-                "未找到与「%s」相关的命令。原版命令以本知识库为准；模组命令需服务器侧导出"
-                "（/mc_kb_dump 生成 runtime_dump/commands.json）后才会被收录。"
-                % keyword
+                "未找到与「%s」相关的命令。内置原版命令支持中文描述搜索；模组命令需服务器侧导出"
+                "（/mc_kb_dump 生成 runtime_dump/commands.json）后才会被收录，届时用英文命令名"
+                "或参数词查询（多个词用空格隔开、顺序不限）。" % keyword
             )
         return "\n".join(lines)
 
