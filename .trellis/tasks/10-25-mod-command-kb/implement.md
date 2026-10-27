@@ -7,7 +7,7 @@
 - [ ] 1. 审批父设计与子任务一计划；只启动 `10-25-kubejs-command-dump`。
 - [ ] 2. 子任务一交付：共享 `commands.json` schema、KubeJS 导出、原子发布、查询聚合、新建 `tests/` 离线回归及 CTI/Farming 实测。
 - [ ] 3. 对子任务一做 spec + standards review 和 `trellis-check`；发现问题回原任务修正，通过后再归档。
-- [ ] 4. 子任务一归档后分别评审后续任务启动条件；同一阶段只保留一个实施者，不并行修改产品代码。`10-25-rcon-help-command-fallback` 已补 design.md / implement.md，但必须完成双版本隔离副本 A/B、多包、空包和共享锁实测后才能 start；`10-26-command-intent-search` 代码依赖已完成，可先 start 做 AC1–AC3/AC5，AC4 所需两份真实快照必须重新生成、分别发布并完成同一 AstrBot 模型 5/5 后才能完成/归档。
+- [x] 4. 子任务一归档后分别评审后续任务启动条件；同一阶段只保留一个实施者，不并行修改产品代码。`10-26-command-intent-search` 已完成并归档（离线 AC1–AC3/AC5 通过；AC4 用隔离副本快照 + `deepseek/deepseek-v4-flash` 真实模型 5/5，证据见归档任务 `research/02-live-ac4.md`）。`10-25-rcon-help-command-fallback` 已补 design/implement 与 P0 实测，独立评审完成（无 P0，P1 已按 implement.md §0 修订），**仍待用户开工许可才能 start**；P6 前需按 §0.3 建立最小 1.20.1 包。
 - [ ] 5. RCON 子任务复用同一发布/查询契约，以独立 `/mc_kb_rcon_scan` 完成无 KubeJS 闭环、A/B 传输、纯根降级、可检验故障关闭、双版本分环境差分与 `2N+4` 性能记录。
 - [ ] 6. 检索子任务完成英文调用引导、token AND、离线回归和实际 AstrBot 模型 5/5 召回；失败返回规划，不自动扩建中文语义层。
 - [ ] 7. 父任务做最终集成验收：两个生产者不会留下第二套消费链，两种 producer 都使用同一查询改进，文档和 spec 一致，全部 AC 有证据。

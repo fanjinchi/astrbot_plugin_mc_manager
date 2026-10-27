@@ -34,7 +34,7 @@
 - **R6 失败关闭**：解析、传输或导出失败时不得发布截断/部分快照；旧的有效命令缓存仍可查询。RCON 采集不得让残留响应污染后续命令。
 - **R7 派生缓存**：命令数据可重建、可随服务器目录或跨机拷贝流程更新，不作为手工维护的权威配置。跨机复制 `commands.json` 仅承诺迁移命令查询，不等于完整迁移物品知识库；完整物品迁移沿用既有流程，不在本期新增。
 - **R8 兼容与边界**：保持项目支持的 Python 3.10+、Minecraft 1.19.2 和 1.20.1 目标；只承诺 RCON source 可见的 fallback 命令，不保证绕过执行体内部的玩家限制。
-- **R9 中文意图下的英文检索**：调用方 LLM 先将中文意图提炼为英文概念词；查询支持无序 token AND 和空格/`_`/`-` 兼容，保留原版中文 desc 搜索，不承诺模组中文直搜，不引入自动翻译、同义词库或语义层。具体验收由 `.trellis/tasks/10-26-command-intent-search` 承担。
+- **R9 中文意图下的英文检索**：调用方 LLM 先将中文意图提炼为英文概念词；查询支持无序 token AND 和空格/`_`/`-` 兼容，保留原版中文 desc 搜索，不承诺模组中文直搜，不引入自动翻译、同义词库或语义层。具体验收由 `.trellis/tasks/archive/2026-10/10-26-command-intent-search` 承担。
 
 ## Task Map and Ordering
 
@@ -42,7 +42,7 @@
 |---|---|---|
 | 1 | `.trellis/tasks/archive/2026-10/10-25-kubejs-command-dump` | KubeJS 命令树结构化导出、命令缓存发布、`search_mc_commands` 接入及主路径文档 |
 | 子任务一后 | `.trellis/tasks/10-25-rcon-help-command-fallback` | 无 KubeJS 的 RCON help 采集、完整传输与解析、失败保护及 fallback 文档 |
-| 子任务一后 | `.trellis/tasks/10-26-command-intent-search` | 英文调用引导、无序 token AND 匹配、离线回归及真实 AstrBot 模型 5/5 召回验证 |
+| 子任务一后 | `.trellis/tasks/archive/2026-10/10-26-command-intent-search`（✅ 2026-10-28 完成并归档） | 英文调用引导、无序 token AND 匹配、离线回归及真实 AstrBot 模型 5/5 召回验证 |
 
 ## Out of Scope
 

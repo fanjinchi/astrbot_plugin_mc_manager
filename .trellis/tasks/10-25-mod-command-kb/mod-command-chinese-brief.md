@@ -4,7 +4,7 @@
 > 撰写：2026-10-26，来自命令知识库子任务 `10-25-kubejs-command-dump` 的实现与两轮独立评审。
 > 当前状态：本期语法级 MVP 已实现（未提交）；模组命令"中文描述"在父任务 PRD 中被显式排除。
 >
-> **2026-10-26 后续决策**：经中英文资料调研与离线最小原型，暂不采用自动中文 desc/aliases。已创建 `.trellis/tasks/10-26-command-intent-search`，采用“调用方 LLM 提炼英文概念词 + 无序 token AND”路线，真实 AstrBot 模型 5 条意图须 5/5 召回；仍是 planning，未启动实施。下文保留原始讨论材料，§5 的方案 D 推荐不再代表当前决定。
+> **2026-10-26 后续决策**：经中英文资料调研与离线最小原型，暂不采用自动中文 desc/aliases。已创建 `.trellis/tasks/archive/2026-10/10-26-command-intent-search`，采用“调用方 LLM 提炼英文概念词 + 无序 token AND”路线，真实 AstrBot 模型 5 条意图须 5/5 召回。该子任务已于 2026-10-28 实施完成：离线 AC1–AC3/AC5 通过、AC4 真实模型 5/5，任务已归档到 `.trellis/tasks/archive/2026-10/`。下文保留原始讨论材料，§5 的方案 D 推荐不再代表当前决定。
 
 ---
 
