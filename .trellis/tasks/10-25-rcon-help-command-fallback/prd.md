@@ -20,7 +20,9 @@
 - [x] `design.md`：锁定低层传输/API 落点、共享 `_send_lock`、A/B 状态机、smart usage 解析、纯根证据、预算、失败关闭和 `/mc_kb_rcon_scan`。
 - [x] `implement.md`：P0 真机实测先于采集器实现，P1–P7 列明改动文件、验证命令与回滚点。
 - [x] 在 CTI0.46（1.19.2）与 Farming（1.20.1）隔离副本完成多包、空包、A/B id 序列、禁止立即 A+B、共享锁和后续命令隔离实测，证据写入 `research/02-rcon-ab-probe.md`。
-- [x] P0 已填真实资源值并确认 design 上限；实测值见 `implement.md` P0.3 与 `research/02-rcon-ab-probe.md`。P6、独立评审和后续开工许可仍未完成，不得仅因 P0 完成而启动产品实现。
+- [x] P0 已填真实资源值并确认 design 上限；实测值见 `implement.md` P0.3 与 `research/02-rcon-ab-probe.md`。
+- [x] 回填后的独立评审已完成（2026-10-28，`research/02a-backfill-review.md`）：无 P0；P1 已按 `implement.md` §0 修订（ruff 验证门、KubeJS 门槛、1.20.1 换最小包）。
+- [ ] 用户开工许可仍未给出，不得仅因 P0/文档完成而启动产品实现。
 
 ## Requirements
 
@@ -32,6 +34,7 @@
 - **R6 主路径协作与入口**：KubeJS 可用时仍优先结构化导出；只在无 KubeJS 环境由管理员显式执行 `/mc_kb_rcon_scan`。入口有权限检查、单飞、进度/失败根/耗时回执；不得被 `kb.enabled` 或本机 `mc_server_dir` 阻断跨机 RCON-only 查询。本机发现 KubeJS 正向证据时拒绝；跨机无法完整证明时，以独立管理员显式指令作为环境确认并说明限制。KubeJS 导出失败不自动 fallback。
 - **R7 资源与一致性边界**：初始根 help + N 个 targeted + 末次根 help，连同每次 B 哨兵共 `2(N+2)=2N+4` 个 RCON 请求；必须有根数、片数、字节和总耗时上限。首尾根集合不一致或可发现结构异常时拒绝发布；同根集合下 dispatcher 热替换无法由 help 原子排除，不承诺全局原子快照。
 - **P0 实测回填**：三组隔离副本均完成全量扫描，Farming N=182/368 请求，CTI-kubejs N=183/370 请求，CTI-nokubejs N=179/362 请求，均符合 `2N+4` 且首尾根集合一致；根 help 为 2–3 包、6892–10875 字符。完整数据与原始文件见 `research/02-rcon-ab-probe.md`，其中耗时仅为 targeted 交换循环耗时，不作为完整扫描预算或远程 SLA。
+- **环境方案调整（2026-10-28）**：1.20.1 的 fallback 验收改用最小包（Forge 1.20.1 + Vinery，无 KubeJS），不再复用 Farming-nokubejs——该副本两次起服失败（`Item: tide:cooked_fish does not exist`），且原归因“物品注册在 `farmingtales-kubejs-support`”经复核不成立（该 jar 无 tide 引用）。Farming-kubejs 仅用于 AC6 差分。
 - **R8 可检测边界与运行前提**：扫描期间不得有其他 RCON 客户端写入命令，包括服务器面板或其他管理员的独立连接；本插件 `_send_lock` 只约束自身，正常多包完整性保证只在此前提、逐请求顺序、TCP 有序性和 B 哨兵下成立，不能声称外部并发安全。管理员回执和 README 必须提示该前提；P0 已实测同 ID 双份完整响应，双客户端竞争只记录故障形态，一次未复现不等于证明安全。idle-drain 只能诊断。RCON 无片序号/总长度，不承诺检测“中间内容片删除但仍收到合法 B”等任意内容删除。
 
 ## Out of Scope
@@ -45,7 +48,7 @@
 
 ## Acceptance Criteria
 
-- [ ] **AC1 无 KubeJS 闭环**：在移除 KubeJS 及必需附属 mod 的隔离副本，仅配置 RCON 完成 `/mc_kb_rcon_scan` 后，`search_mc_commands` 能返回模组根及一级子命令 usage；Farming 的浅树 `wine age <years>` / `wine info` 完整还原，CTI 用该副本实际存在的浅树命令验收；无一级子命令/redirect 证据的纯根可不出现在 RCON 快照中，不以根级 `/foo` 或空 targeted 补造。跨机场景不被 `kb.enabled` 或本机 `mc_server_dir` 阻断。
+- [ ] **AC1 无 KubeJS 闭环**：在移除 KubeJS 及必需附属 mod 的隔离副本（1.20.1 用最小包：Forge 1.20.1 + Vinery，不含 KubeJS，见 `implement.md` §0.3），仅配置 RCON 完成 `/mc_kb_rcon_scan` 后，`search_mc_commands` 能返回模组根及一级子命令 usage；1.20.1 最小包的浅树 `wine age <years>` / `wine info` 完整还原，CTI 用该副本实际存在的浅树命令验收；无一级子命令/redirect 证据的纯根可不出现在 RCON 快照中，不以根级 `/foo` 或空 targeted 补造。跨机场景不被 `kb.enabled` 或本机 `mc_server_dir` 阻断。
 - [ ] **AC2 传输完整**：在没有其他 RCON 写入者的前提下，超过 4096 字符的多包响应按 A/B request id 完整接收；B 缺失/错 id 等可观察故障失败关闭，后续普通 RCON 命令收到自己的响应而非遗留 help 分片。最后一次 B 后的尾随窗口静默到期算检查完成，窗口内收到尾随包才失败；idle-drain 不作为通过依据。
 - [ ] **AC3 解析正确**：无换行、多分支、redirect、深层 `(a|b)` 压缩和空 targeted 夹具得到预期结构；根级 `/foo`、root-only、`foo` 与 `foo bar` 并存夹具证明 RCON 不伪造普通纯根，真实 `-> target`（含 root target 的名字形式）正确拆分；裸 `->`（含尾部空白）仅作为额外容错/合成夹具归一为 `redirect="..."`，不得冒充本次实测形态，KubeJS 纯根保持不变。查询显示 `producer=rcon` 的深分支和“纯根可能未收录”说明。
 - [ ] **AC4 失败关闭**：EOF、截断 length/body、错/未知 id、B 缺失、B 后窗口内尾随包、交换/总超时、片数/字节超限、本地化错误、自定义异常 help、首尾根集合不一致及跨交换旧 id 迟到等场景不产生部分快照，旧缓存仍可查且后续命令不受污染；合法空 targeted 和最后 B 后尾随窗口静默不触发失败。首尾根集合变化优先用确定性 fake-server 验收；任意中间内容片删除、同根集热替换和外部 RCON 并发写入按 R8/R7 的不可保证边界记录，不虚构通过证据。

@@ -51,7 +51,7 @@
   - 逐项保留并运行既有回归：单 token、原版中文 desc、无匹配、坏快照、两种 producer 提示、按根计数的 `limit`、单根 8 条 usage 上限、纯根、根+子 usage 和 redirect。
   - 新增连续分隔符、大小写和 `->` 结构 token 测试；另加一个边界断言：不同 token 可以分别命中同一根的根名/描述等不同字段而使根级 AND 成立，但不能拼成普通 `matched` usage，只有同一普通 usage 覆盖全部 token 才能进入 `matched`。
   - `clear radiation` 这类需要额外同义词的查询仍允许无结果，不伪造语义。
-- [ ] **AC4 真实复验**：使用已归档子任务 1 从下列两个实例分别重新生成并发布的真实快照，不得合并跨实例条目，也不得用临时混合夹具替代。表中路径是重新生成时的原始来源；当前两份文件不存在，不得以历史验收数字代替。实际查询必须使用两个独立 `ASTRBOT_ROOT` 下通过子任务 1 发布流程分别导入的对应副本，不得只把 `/tmp` 隔离目录传给离线函数来替代真实 AstrBot 工具链。每组先确认目标条目已存在，并记录新来源路径、已发布路径、producer、count、SHA-256 和本表逐项目标 syntax；缺文件或缺目标条目时验收阻塞且不得判通过或改用其他快照凑数。
+- [x] **AC4 真实复验**：使用已归档子任务 1 从下列两个实例分别重新生成并发布的真实快照，不得合并跨实例条目，也不得用临时混合夹具替代。表中路径是重新生成时的原始来源；当前两份文件不存在，不得以历史验收数字代替。实际查询必须使用两个独立 `ASTRBOT_ROOT` 下通过子任务 1 发布流程分别导入的对应副本，不得只把 `/tmp` 隔离目录传给离线函数来替代真实 AstrBot 工具链。每组先确认目标条目已存在，并记录新来源路径、已发布路径、producer、count、SHA-256 和本表逐项目标 syntax；缺文件或缺目标条目时验收阻塞且不得判通过或改用其他快照凑数。
 
   | 分组 | 逐字用户输入 | 预期根 | 工具原始输出必须出现的完整 syntax |
   |---|---|---|---|
@@ -105,5 +105,10 @@
   - Spec P2-3 记录为已知限制不修：多 token 查询的整条归一化串通常不等于/不前缀于根名，因此多词查询落在第 4 档、按根名排序（如 `time set` 会多返回 `/setidletimeout` 且排在 `/time` 前）；忽略分隔符做子串匹配会让短 token（`mc`）跨词边界假命中。这是 R3「用完整查询比较根名」与「子串匹配兼容 quest/ftbquests」的直接代价，真实影响要到 AC4 全量快照才能判断，不在离线阶段扩范围。
 - **修复后复验**：49 tests OK（新增 2 个边界用例）；compileall 通过；`ruff format --check kb/commands.py tests/test_commands.py` 已格式化；`kb/commands.py` 仅剩既有 UP031/UP045。
 - **Spec 同步**：`.trellis/spec/backend/runtime-dump.md` 新增 3.1.1 查询语义（token AND/分隔符等价/`->` 结构/已知限制）、更新签名表行号（`kb/commands.py:226/386`）、补充 Tests Required 与 Wrong/Correct 两条。
-- **未做**：AC4 两份真实快照未生成（`/home/guigui/mc/Farming/runtime_dump/commands.json`、`/home/guigui/mc/CTI0.46/runtime_dump/commands.json` 均不存在，两实例当前未开服）；真实 AstrBot 模型 5/5 未复验。归档前必须补齐。
+- **AC4 真实复验（2026-10-28，5/5 通过）**：证据见 `research/02-live-ac4.md` 与 `research/ac4-evidence-{farming,cti}.json`。
+  - 快照：用 P0 隔离副本（CTI-kubejs 1.19.2、Farming-kubejs 1.20.1，KubeJS 保留）走生产 `RuntimeDumpRunner` 生成，经 `import_snapshot()` 分别发布到两个独立 `ASTRBOT_ROOT`；Farming 2248 条/193 根 `d945b27c…`，CTI 2061 条/188 根 `0749006d…`。
+  - 模型：`deepseek/deepseek-v4-flash`（source `deepseek`，temperature 1、max_tokens 384000、reasoning_effort max），只暴露 `search_mc_commands`（`tool_count=1` 断言），无 fallback，5 条全新会话；执行类工具调用 0。
+  - 结果：Farming `wine age <years>`、`ftbquests editing_mode <...>`、`waystones list <player> all`；CTI `mek radiation removeAll`、`ae2 channelmode default|infinite|x2|x3|x4` 全部命中，工具轮数 1–2。
+- **新发现（2026-10-28）**：KubeJS `/reload` 会让未通过 `RegisterCommandsEvent` 注册的命令（实测 AE2）从 dispatcher 消失——reload 前 `help ae2` 正常、reload 后 `Unknown`；同一副本首轮快照 184 根/2038 条，重启后不 reload 再导出 188 根/2061 条。已在 `runtime-dump.md` 记录，README 补充用户侧说明。
+- **未做**：真实执行可行性（权限/玩家上下文/RCON 可见性）不在本任务范围；AC4 单次运行，未覆盖其他模型/温度。
 

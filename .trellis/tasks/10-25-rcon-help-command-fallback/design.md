@@ -73,7 +73,7 @@
 
 每个逻辑查询都是一次 A/B 交换：
 
-- A 为 `help`、`help <root>`，或 P0 专用能力探针。
+- A 为 `help`、`help <root>`，或 P0 专用能力探针；能力探针（`help help`/`help 1`/不存在命令）另计请求，**不计入 `2N+4` 预算**，`help 1` 的纯文本不送解析。
 - B 为短随机、无副作用且不可能正常注册的未知 literal，例如带一次扫描随机后缀的保留前缀；不得使用真实命令、带参数命令或固定英文反馈判断。
 - A、B 使用不同的合法 request id；整次扫描内所有 request id 均不复用，同次交换只接受当前预期 id。这样迟到的旧包不会恰好变成后续交换的合法响应。B 的本地化未知命令文本只用于完成信号，不进入解析或知识库。
 
@@ -159,7 +159,7 @@ AUTH_OK
 | 项目 | P0 实测 | 初始硬上限/超限处理 |
 |---|---|---|
 | 根数 N | Farming 182；CTI-kubejs 183；CTI-nokubejs 179 | 512；首次根 help 后停止，不发送 targeted |
-| 总请求数 | 分别 368/370/362，均等于 `2N+4` | `2N+4`，N=512 时 1028；发送下一请求前检查 |
+| 总请求数 | 正式扫描分别 368/370/362，均等于 `2N+4`；同 socket 另跑 empty-detail 探针 +8/+10/+8，不计入预算 | `2N+4`，N=512 时 1028；发送下一请求前检查 |
 | 单 A 响应片数 | 根 help 2–3 包；`help execute` 单包 | 256；失败关闭 |
 | 单 A 响应字符/字节 | 根 help 6892–10875 字符、6912–10905 raw bytes | 1 MiB；失败关闭 |
 | 整次扫描总片数/字节 | 未超上限；逐交换原始计数见 02，旧 targeted 字节未统一汇总 | 4096 片 / 16 MiB；失败关闭 |
@@ -180,7 +180,7 @@ P0 证据已落入 `.trellis/tasks/10-25-rcon-help-command-fallback/research/02-
 
 1. `_check_permission(event)`；无权限直接返回。
 2. 检查 `self.rcon` 与 `self.kb` 是否可用；发布目录取 `self.kb.data_dir`。**不检查 `self.kb.enabled`，不要求 `mc_server_dir` 非空。**
-3. 本机 `mc_server_dir` 可读取时，若 `kubejs/` 目录或 `mods/` 中可识别的 KubeJS jar 给出已安装证据，拒绝扫描并提示使用 `/mc_kb_dump`。没有发现证据不等于证明远程无 KubeJS。
+3. 本机 `mc_server_dir` 可读取时，只按 `mods/` 中可识别的 KubeJS jar（文件名或 mod 元数据）判断已安装证据，有则拒绝扫描并提示使用 `/mc_kb_dump`；`kubejs/` 目录只产生警告，不能单独作为拒绝依据——删掉 KubeJS mod 但留下脚本目录是常见真实状态（2026-10-28 评审修订）。没有发现证据不等于证明远程无 KubeJS。
 4. 获取 `_rcon_scan_lock`，已有扫描则立即回执；通过后先 yield 开始/进行中的进度消息，并提示扫描期间暂停其他 RCON 写入者。
 5. 调用 `self.rcon.scan_help_commands()`；失败回执包含阶段、失败根、已完成根数、请求数和耗时，旧快照不变。活动任务必须登记到当前插件实例，供 `terminate()` 取消并有界等待清理。
 6. 成功后校验并非空，再发布到 `self.kb.data_dir`；最终回执包含根数、usage/redirect 条数、请求数、片数/字节数、耗时和发布路径。

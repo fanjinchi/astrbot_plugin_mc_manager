@@ -1,0 +1,128 @@
+{
+ "group": "Farming",
+ "astrbot_root": "/home/guigui/mc/ac4-roots/Farming",
+ "data_dir": "/home/guigui/mc/ac4-roots/Farming/data/plugin_data/astrbot_plugin_mc_manager",
+ "snapshot_path": "/home/guigui/mc/ac4-roots/Farming/data/plugin_data/astrbot_plugin_mc_manager/runtime_dump/commands.json",
+ "snapshot_sha256": "d945b27c3d59927202a4da075be26db586e9cd342b60242cfa055a886c035db1",
+ "snapshot_producer": "kubejs",
+ "snapshot_count": 2248,
+ "snapshot_roots": 193,
+ "provider_id": "deepseek/deepseek-v4-flash",
+ "provider_source_id": "deepseek",
+ "provider_model": "deepseek-v4-flash",
+ "provider_type": "openai_chat_completion",
+ "tool_count": 1,
+ "tool_name": "search_mc_commands",
+ "tool_description_sha256": "03414e905f94199f67903cbb443da4fc88b7fe282de066518e5d83f5a8b6f7e2",
+ "system_prompt": "你是一个 Minecraft 服务器管理助手。你可以使用提供的工具来查询信息。",
+ "passed": "3/3",
+ "results": [
+  {
+   "index": 1,
+   "user_input": "把酒陈酿到 10 年",
+   "session_id": "ac4-Farming-1",
+   "expect_root": "wine",
+   "expect_syntax": [
+    "wine age <years>"
+   ],
+   "tool_calls": [
+    {
+     "name": "search_mc_commands",
+     "keyword": "wine",
+     "limit": 8,
+     "data_dir": "/home/guigui/mc/ac4-roots/Farming/data/plugin_data/astrbot_plugin_mc_manager",
+     "output": "找到 1 个匹配「wine」的命令：\n- /wine — 运行时命令（来源未知，权限未知）\n  语法：\n    · wine age <years>\n    · wine info\n注：运行时语法是服务端当前命令树已注册的路径，不代表当前调用者必然可执行（仍受权限等级与命令来源限制）。"
+    },
+    {
+     "name": "search_mc_commands",
+     "keyword": "age",
+     "limit": 8,
+     "data_dir": "/home/guigui/mc/ac4-roots/Farming/data/plugin_data/astrbot_plugin_mc_manager",
+     "output": "找到 8 个匹配「age」的命令：\n- /damage — 对实体造成伤害（1.19.4+）（游戏操作，来源未知，权限未知）\n  语法：\n    · damage <target> <amount>\n    · damage <target> <amount> <damageType>\n    · damage <target> <amount> <damageType> at <location>\n    · damage <target> <amount> <damageType> by <entity>\n    · damage <target> <amount> <damageType> by <entity> from <cause>\n- /damagetracker — 运行时命令（来源未知，权限未知）\n  语法：\n    · damagetracker player <player> attack <time>\n    · damagetracker player <player> hurt <time>\n- /refinedstorage — 运行时命令（来源未知，权限未知）\n  语法：\n    · refinedstorage disk create <player> <id>\n    · refinedstorage disk list\n    · refinedstorage disk list <player>\n    · refinedstorage network get <dimension> <pos>\n    · refinedstorage network get <dimension> <pos> autocrafting cancel\n    · refinedstorage network get <dimension> <pos> autocrafting cancel <id>\n    · refinedstorage network get <dimension> <pos> autocrafting get <id>\n    · refinedstorage network get <dimension> <pos> autocrafting list\n    （另有 2 条用法，可用更精确的关键词）\n- /bookshelf — 运行时命令（来源未知，权限未知）\n  语法：\n    · bookshelf font say <font> <message>\n    · bookshelf font block <font> <pos>\n    · bookshelf font book <font>\n    · bookshelf font item <font>\n    · bookshelf hand <output_type>\n- /chunky — 运行时命令（来源未知，权限未知）\n  语法：\n    · chunky help <page>\n    · chunky\n    · chunky border\n    · chunky border add\n    · chunky border add <world>\n    · chunky border add <world> <shape>\n    · chunky border add <world> <shape> <centerX>\n    · chunky border add <world> <shape> <centerX> <centerZ>\n    （另有 63 条用法，可用更精确的关键词）\n- /createlazytick — 运行时命令（来源未知，权限未知）\n  语法：\n    · createlazytick list <page>\n    · createlazytick list <page> <sort>\n    · createlazytick list <page> <sort> <reverse>\n    · createlazytick list <page> complex <sort_chain>\n    · createlazytick list <page> complex <sort_chain> <global_reverse>\n    · createlazytick list <page> complex <sort_chain> <global_reverse> <filter_chain>\n    · createlazytick dump\n    · createlazytick dump <sort_chain>\n    （另有 13 条用法，可用更精确的关键词）\n- /data — 运行时命令（来源未知，权限未知）\n  语法：\n    · data get block <targetPos>\n    · data get block <targetPos> <path>\n    · data get block <targetPos> <path> <scale>\n    · data get entity <target>\n    · data get entity <target> <path>\n    · data get entity <target> <path> <scale>\n    · data get storage <target>\n    · data get storage <target> <path>\n    （另有 292 条用法，可用更精确的关键词）\n- /execute — 条件/上下文执行命令，高级嵌套用（游戏操作，来源未知，权限未知）\n  语法：\n    · execute if data storage <source> <path>\n    · execute unless data storage <source> <path>\n    · execute if biome <pos> <biome>\n    · execute if block <pos> <block>\n    · execute if blocks <start> <end> <destination> all\n    · execute if blocks <start> <end> <destination> masked\n    · execute if data block <sourcePos> <path>\n    · execute if data entity <source> <path>\n    （另有 26 条用法，可用更精确的关键词）\n  重定向：execute align <axes> -> execute（别名/指向，不是完整可执行路径）\n  重定向：execute anchored <anchor> -> execute（别名/指向，不是完整可执行路径）\n  重定向：execute as <targets> -> execute（别名/指向，不是完整可执行路径）\n  重定向：execute at <targets> -> execute（别名/指向，不是完整可执行路径）\n  重定向：execute facing <pos> -> execute（别名/指向，不是完整可执行路径）\n  重定向：execute facing entity <targets> <anchor> -> execute（别名/指向，不是完整可执行路径）\n  重定向：execute if biome <pos> <biome> -> execute（别名/指向，不是完整可执行路径）\n  重定向：execute if block <pos> <block> -> execute（别名/指向，不是完整可执行路径）\n  重定向：execute if blocks <start> <end> <destination> all -> execute（别名/指向，不是完整可执行路径）\n  重定向：execute if blocks <start> <end> <destination> masked -> execute（别名/指向，不是完整可执行路径）\n  重定向：execute if data block <sourcePos> <path> -> execute（别名/指向，不是完整可执行路径）\n  重定向：execute if data entity <source> <path> -> execute（别名/指向，不是完整可执行路径）\n  重定向：execute if data storage <source> <path> -> execute（别名/指向，不是完整可执行路径）\n  重定向：execute if dimension <dimension> -> execute（别名/指向，不是完整可执行路径）\n  重定向：execute if entity <entities> -> execute（别名/指向，不是完整可执行路径）\n  重定向：execute if loaded <pos> -> execute（别名/指向，不是完整可执行路径）\n  重定向：execute if predicate <predicate> -> execute（别名/指向，不是完整可执行路径）\n  重定向：execute if score <target> <targetObjective> < <source> <sourceObjective> -> execute（别名/指向，不是完整可执行路径）\n  重定向：execute if score <target> <targetObjective> <= <source> <sourceObjective> -> execute（别名/指向，不是完整可执行路径）\n  重定向：execute if score <target> <targetObjective> = <source> <sourceObjective> -> execute（别名/指向，不是完整可执行路径）\n  重定向：execute if score <target> <targetObjective> > <source> <sourceObjective> -> execute（别名/指向，不是完整可执行路径）\n  重定向：execute if score <target> <targetObjective> >= <source> <sourceObjective> -> execute（别名/指向，不是完整可执行路径）\n  重定向：execute if score <target> <targetObjective> matches <range> -> execute（别名/指向，不是完整可执行路径）\n  重定向：execute in <dimension> -> execute（别名/指向，不是完整可执行路径）\n  重定向：execute on attacker -> execute（别名/指向，不是完整可执行路径）\n  重定向：execute on controller -> execute（别名/指向，不是完整可执行路径）\n  重定向：execute on leasher -> execute（别名/指向，不是完整可执行路径）\n  重定向：execute on origin -> execute（别名/指向，不是完整可执行路径）\n  重定向：execute on owner -> execute（别名/指向，不是完整可执行路径）\n  重定向：execute on passengers -> execute（别名/指向，不是完整可执行路径）\n  重定向：execute on target -> execute（别名/指向，不是完整可执行路径）\n  重定向：execute on vehicle -> execute（别名/指向，不是完整可执行路径）\n  重定向：execute positioned <pos> -> execute（别名/指向，不是完整可执行路径）\n  重定向：execute positioned as <targets> -> execute（别名/指向，不是完整可执行路径）\n  重定向：execute positioned over <heightmap> -> execute（别名/指向，不是完整可执行路径）\n  重定向：execute rotated <rot> -> execute（别名/指向，不是完整可执行路径）\n  重定向：execute rotated as <targets> -> execute（别名/指向，不是完整可执行路径）\n  重定向：execute run ...（别名/指向，不是完整可执行路径）\n  重定向：execute store result block <targetPos> <path> byte <scale> -> execute（别名/指向，不是完整可执行路径）\n  重定向：execute store result block <targetPos> <path> double <scale> -> execute（别名/指向，不是完整可执行路径）\n  重定向：execute store result block <targetPos> <path> float <scale> -> execute（别名/指向，不是完整可执行路径）\n  重定向：execute store result block <targetPos> <path> int <scale> -> execute（别名/指向，不是完整可执行路径）\n  重定向：execute store result block <targetPos> <path> long <scale> -> execute（别名/指向，不是完整可执行路径）\n  重定向：execute store result block <targetPos> <path> short <scale> -> execute（别名/指向，不是完整可执行路径）\n  重定向：execute store result bossbar <id> max -> execute（别名/指向，不是完整可执行路径）\n  重定向：execute store result bossbar <id> value -> execute（别名/指向，不是完整可执行路径）\n  重定向：execute store result entity <target> <path> byte <scale> -> execute（别名/指向，不是完整可执行路径）\n  重定向：execute store result entity <target> <path> double <scale> -> execute（别名/指向，不是完整可执行路径）\n  重定向：execute store result entity <target> <path> float <scale> -> execute（别名/指向，不是完整可执行路径）\n  重定向：execute store result entity <target> <path> int <scale> -> execute（别名/指向，不是完整可执行路径）\n  重定向：execute store result entity <target> <path> long <scale> -> execute（别名/指向，不是完整可执行路径）\n  重定向：execute store result entity <target> <path> short <scale> -> execute（别名/指向，不是完整可执行路径）\n  重定向：execute store result score <targets> <objective> -> execute（别名/指向，不是完整可执行路径）\n  重定向：execute store result storage <target> <path> byte <scale> -> execute（别名/指向，不是完整可执行路径）\n  重定向：execute store result storage <target> <path> double <scale> -> execute（别名/指向，不是完整可执行路径）\n  重定向：execute store result storage <target> <path> float <scale> -> execute（别名/指向，不是完整可执行路径）\n  重定向：execute store result storage <target> <path> int <scale> -> execute（别名/指向，不是完整可执行路径）\n  重定向：execute store result storage <target> <path> long <scale> -> execute（别名/指向，不是完整可执行路径）\n  重定向：execute store result storage <target> <path> short <scale> -> execute（别名/指向，不是完整可执行路径）\n  重定向：execute store success block <targetPos> <path> byte <scale> -> execute（别名/指向，不是完整可执行路径）\n  重定向：execute store success block <targetPos> <path> double <scale> -> execute（别名/指向，不是完整可执行路径）\n  重定向：execute store success block <targetPos> <path> float <scale> -> execute（别名/指向，不是完整可执行路径）\n  重定向：execute store success block <targetPos> <path> int <scale> -> execute（别名/指向，不是完整可执行路径）\n  重定向：execute store success block <targetPos> <path> long <scale> -> execute（别名/指向，不是完整可执行路径）\n  重定向：execute store success block <targetPos> <path> short <scale> -> execute（别名/指向，不是完整可执行路径）\n  重定向：execute store success bossbar <id> max -> execute（别名/指向，不是完整可执行路径）\n  重定向：execute store success bossbar <id> value -> execute（别名/指向，不是完整可执行路径）\n  重定向：execute store success entity <target> <path> byte <scale> -> execute（别名/指向，不是完整可执行路径）\n  重定向：execute store success entity <target> <path> double <scale> -> execute（别名/指向，不是完整可执行路径）\n  重定向：execute store success entity <target> <path> float <scale> -> execute（别名/指向，不是完整可执行路径）\n  重定向：execute store success entity <target> <path> int <scale> -> execute（别名/指向，不是完整可执行路径）\n  重定向：execute store success entity <target> <path> long <scale> -> execute（别名/指向，不是完整可执行路径）\n  重定向：execute store success entity <target> <path> short <scale> -> execute（别名/指向，不是完整可执行路径）\n  重定向：execute store success score <targets> <objective> -> execute（别名/指向，不是完整可执行路径）\n  重定向：execute store success storage <target> <path> byte <scale> -> execute（别名/指向，不是完整可执行路径）\n  重定向：execute store success storage <target> <path> double <scale> -> execute（别名/指向，不是完整可执行路径）\n  重定向：execute store success storage <target> <path> float <scale> -> execute（别名/指向，不是完整可执行路径）\n  重定向：execute store success storage <target> <path> int <scale> -> execute（别名/指向，不是完整可执行路径）\n  重定向：execute store success storage <target> <path> long <scale> -> execute（别名/指向，不是完整可执行路径）\n  重定向：execute store success storage <target> <path> short <scale> -> execute（别名/指向，不是完整可执行路径）\n  重定向：execute summon <entity> -> execute（别名/指向，不是完整可执行路径）\n  重定向：execute unless biome <pos> <biome> -> execute（别名/指向，不是完整可执行路径）\n  重定向：execute unless block <pos> <block> -> execute（别名/指向，不是完整可执行路径）\n  重定向：execute unless blocks <start> <end> <destination> all -> execute（别名/指向，不是完整可执行路径）\n  重定向：execute unless blocks <start> <end> <destination> masked -> execute（别名/指向，不是完整可执行路径）\n  重定向：execute unless data block <sourcePos> <path> -> execute（别名/指向，不是完整可执行路径）\n  重定向：execute unless data entity <source> <path> -> execute（别名/指向，不是完整可执行路径）\n  重定向：execute unless data storage <source> <path> -> execute（别名/指向，不是完整可执行路径）\n  重定向：execute unless dimension <dimension> -> execute（别名/指向，不是完整可执行路径）\n  重定向：execute unless entity <entities> -> execute（别名/指向，不是完整可执行路径）\n  重定向：execute unless loaded <pos> -> execute（别名/指向，不是完整可执行路径）\n  重定向：execute unless predicate <predicate> -> execute（别名/指向，不是完整可执行路径）\n  重定向：execute unless score <target> <targetObjective> < <source> <sourceObjective> -> execute（别名/指向，不是完整可执行路径）\n  重定向：execute unless score <target> <targetObjective> <= <source> <sourceObjective> -> execute（别名/指向，不是完整可执行路径）\n  重定向：execute unless score <target> <targetObjective> = <source> <sourceObjective> -> execute（别名/指向，不是完整可执行路径）\n  重定向：execute unless score <target> <targetObjective> > <source> <sourceObjective> -> execute（别名/指向，不是完整可执行路径）\n  重定向：execute unless score <target> <targetObjective> >= <source> <sourceObjective> -> execute（别名/指向，不是完整可执行路径）\n  重定向：execute unless score <target> <targetObjective> matches <range> -> execute（别名/指向，不是完整可执行路径）\n注：运行时语法是服务端当前命令树已注册的路径，不代表当前调用者必然可执行（仍受权限等级与命令来源限制）。\n（只显示前 8 个命令，可用更精确的关键词）"
+    },
+    {
+     "name": "search_mc_commands",
+     "keyword": "wine age years",
+     "limit": 8,
+     "data_dir": "/home/guigui/mc/ac4-roots/Farming/data/plugin_data/astrbot_plugin_mc_manager",
+     "output": "找到 1 个匹配「wine age years」的命令：\n- /wine — 运行时命令（来源未知，权限未知）\n  语法：\n    · wine age <years>\n    · wine info\n注：运行时语法是服务端当前命令树已注册的路径，不代表当前调用者必然可执行（仍受权限等级与命令来源限制）。"
+    },
+    {
+     "name": "search_mc_commands",
+     "keyword": "wine info",
+     "limit": 8,
+     "data_dir": "/home/guigui/mc/ac4-roots/Farming/data/plugin_data/astrbot_plugin_mc_manager",
+     "output": "找到 1 个匹配「wine info」的命令：\n- /wine — 运行时命令（来源未知，权限未知）\n  语法：\n    · wine info\n    · wine age <years>\n注：运行时语法是服务端当前命令树已注册的路径，不代表当前调用者必然可执行（仍受权限等级与命令来源限制）。"
+    }
+   ],
+   "tool_turn_count": 2,
+   "hit_turn_cap": false,
+   "final_text": "已经查到了：这个陈酿功能由模组的 `/wine` 命令提供，语法只有两条：\n\n- `/wine age <years>` — 把（通常是你手上拿着的）酒陈酿指定年数\n- `/wine info` — 查看当前酒的陈酿信息\n\n所以把酒陈酿到 10 年，命令是：\n\n```\n/wine age 10\n```\n\n建议的用法顺序是：\n\n1. 先把要陈酿的酒拿在**主手**（这类模组命令一般作用于手持物品，命令树里没有 `wine age <years> <target>` 这种选择物品或玩家的参数，所以只能靠手持来指定对象）；\n2. 执行 `/wine age 10`；\n3. 再用 `/wine info` 确认年份已经到了 10 年。\n\n两点提醒：\n\n- 我没有可以真正执行命令的工具，只能帮你查语法并给出可粘贴的命令，实际执行需要你在服务器里或 RCON 里输入。\n- 运行时命令树只说明服务端**注册**了这条路径，权限等级未知（游戏内通常需要管理员或 OP）。如果你执行时提示权限不足，就用控制台或 OP 身份执行。",
+   "root_ok": true,
+   "syntax_ok": true,
+   "passed": true
+  },
+  {
+   "index": 2,
+   "user_input": "给 Steve 开启任务编辑模式",
+   "session_id": "ac4-Farming-2",
+   "expect_root": "ftbquests",
+   "expect_syntax": [
+    "ftbquests editing_mode <enabled> <player>"
+   ],
+   "tool_calls": [
+    {
+     "name": "search_mc_commands",
+     "keyword": "quest editing",
+     "limit": 8,
+     "data_dir": "/home/guigui/mc/ac4-roots/Farming/data/plugin_data/astrbot_plugin_mc_manager",
+     "output": "找到 1 个匹配「quest editing」的命令：\n- /ftbquests — 运行时命令（来源未知，权限未知）\n  语法：\n    · ftbquests editing_mode\n    · ftbquests editing_mode <enabled>\n    · ftbquests editing_mode <enabled> <player>\n    · ftbquests block_rewards\n    · ftbquests block_rewards <enabled>\n    · ftbquests block_rewards <enabled> <player>\n    · ftbquests change_progress <players> complete <quest_object>\n    · ftbquests change_progress <players> reset <quest_object>\n    （另有 13 条用法，可用更精确的关键词）\n注：运行时语法是服务端当前命令树已注册的路径，不代表当前调用者必然可执行（仍受权限等级与命令来源限制）。"
+    },
+    {
+     "name": "search_mc_commands",
+     "keyword": "quest mode",
+     "limit": 8,
+     "data_dir": "/home/guigui/mc/ac4-roots/Farming/data/plugin_data/astrbot_plugin_mc_manager",
+     "output": "找到 1 个匹配「quest mode」的命令：\n- /ftbquests — 运行时命令（来源未知，权限未知）\n  语法：\n    · ftbquests editing_mode\n    · ftbquests editing_mode <enabled>\n    · ftbquests editing_mode <enabled> <player>\n    · ftbquests block_rewards\n    · ftbquests block_rewards <enabled>\n    · ftbquests block_rewards <enabled> <player>\n    · ftbquests change_progress <players> complete <quest_object>\n    · ftbquests change_progress <players> reset <quest_object>\n    （另有 13 条用法，可用更精确的关键词）\n注：运行时语法是服务端当前命令树已注册的路径，不代表当前调用者必然可执行（仍受权限等级与命令来源限制）。"
+    }
+   ],
+   "tool_turn_count": 1,
+   "hit_turn_cap": false,
+   "final_text": "已找到对应的命令（来自 FTB Quests 模组）：\n\n```\n/ftbquests editing_mode true Steve\n```\n\n**说明：**\n- 语法：`/ftbquests editing_mode <enabled> <player>`\n  - `<enabled>`：`true` 开启、`false` 关闭\n  - 如果不写 `<player>`，则默认作用于执行者自己\n- 只写 `/ftbquests editing_mode` 可以查询或切换当前状态。\n\n**注意：**\n- 该命令需要足够的权限等级（通常为 OP / 权限等级 2）。执行者必须拥有相应权限；否则会因为“权限不足”而失败。\n- 开启编辑模式后，Steve 客户端才会显示任务编辑界面（FTB Quests 的编辑功能还需要客户端安装同版本模组）。\n\n顺便提醒：我用的是查询工具，只能查到命令语法，无法直接替你执行。请在服务器控制台或游戏内以管理员身份运行上面这条命令。需要的话，我可以再帮你查询关闭编辑模式或相关命令，例如 `block_rewards` 或 `change_progress`。",
+   "root_ok": true,
+   "syntax_ok": true,
+   "passed": true
+  },
+  {
+   "index": 3,
+   "user_input": "看看老王激活了哪些传送石碑",
+   "session_id": "ac4-Farming-3",
+   "expect_root": "waystones",
+   "expect_syntax": [
+    "waystones list <player> all"
+   ],
+   "tool_calls": [
+    {
+     "name": "search_mc_commands",
+     "keyword": "waystone list player",
+     "limit": 8,
+     "data_dir": "/home/guigui/mc/ac4-roots/Farming/data/plugin_data/astrbot_plugin_mc_manager",
+     "output": "找到 1 个匹配「waystone list player」的命令：\n- /waystones — 运行时命令（来源未知，权限未知）\n  语法：\n    · waystones list <player>\n    · waystones list <player> all\n    · waystones activate <targets> <pos>\n    · waystones cooldown <targets> reset all\n    · waystones cooldown <targets> reset inventory_button\n    · waystones cooldown <targets> reset warp_stone\n    · waystones count <player>\n    · waystones forget <targets> <pos>\n    （另有 2 条用法，可用更精确的关键词）\n注：运行时语法是服务端当前命令树已注册的路径，不代表当前调用者必然可执行（仍受权限等级与命令来源限制）。"
+    },
+    {
+     "name": "search_mc_commands",
+     "keyword": "waystones",
+     "limit": 8,
+     "data_dir": "/home/guigui/mc/ac4-roots/Farming/data/plugin_data/astrbot_plugin_mc_manager",
+     "output": "找到 1 个匹配「waystones」的命令：\n- /waystones — 运行时命令（来源未知，权限未知）\n  语法：\n    · waystones activate <targets> <pos>\n    · waystones cooldown <targets> reset all\n    · waystones cooldown <targets> reset inventory_button\n    · waystones cooldown <targets> reset warp_stone\n    · waystones count <player>\n    · waystones forget <targets> <pos>\n    · waystones forget <targets> all\n    · waystones list <player>\n    （另有 2 条用法，可用更精确的关键词）\n注：运行时语法是服务端当前命令树已注册的路径，不代表当前调用者必然可执行（仍受权限等级与命令来源限制）。"
+    }
+   ],
+   "tool_turn_count": 2,
+   "hit_turn_cap": false,
+   "final_text": "我这边目前只有命令查询工具，没有可以实际执行命令的工具，因此没法直接替你查询服务器上老王已激活的传送石碑列表。你需要有权限的人在控制台或游戏内执行以下命令才能查看：\n\n```\n/waystones list 老王\n```\n\n- `waystones list <玩家>`：列出该玩家已激活的传送石碑。\n- `waystones list <玩家> all`：如果 `list` 默认只列出部分结果（比如按维度或分页），可以加上 `all` 参数，列出该玩家全部已激活的传送石碑。\n- `waystones count <玩家>`：只想查看数量时，可以使用这条命令。\n\n如果执行后没有结果，或者报错说找不到玩家，请把输出贴给我；我可以帮你判断问题出在哪里：是玩家名不对，是权限不足，还是该玩家确实没有激活任何石碑。\n\n另外提醒一下：`waystones forget <targets> <pos>` 和 `waystones forget <targets> all` 是删除玩家已激活石碑记录的命令；除非你确实要清理，否则请不要误用。",
+   "root_ok": true,
+   "syntax_ok": true,
+   "passed": true
+  }
+ ]
+}

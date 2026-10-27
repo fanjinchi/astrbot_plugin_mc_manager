@@ -1,0 +1,87 @@
+{
+ "group": "CTI",
+ "astrbot_root": "/home/guigui/mc/ac4-roots/CTI",
+ "data_dir": "/home/guigui/mc/ac4-roots/CTI/data/plugin_data/astrbot_plugin_mc_manager",
+ "snapshot_path": "/home/guigui/mc/ac4-roots/CTI/data/plugin_data/astrbot_plugin_mc_manager/runtime_dump/commands.json",
+ "snapshot_sha256": "0749006dbcac9a06138cbacd2f3ca7b8fe9391fb9a3bd91a48ecdeeda80e6ce2",
+ "snapshot_producer": "kubejs",
+ "snapshot_count": 2061,
+ "snapshot_roots": 188,
+ "provider_id": "deepseek/deepseek-v4-flash",
+ "provider_source_id": "deepseek",
+ "provider_model": "deepseek-v4-flash",
+ "provider_type": "openai_chat_completion",
+ "tool_count": 1,
+ "tool_name": "search_mc_commands",
+ "tool_description_sha256": "03414e905f94199f67903cbb443da4fc88b7fe282de066518e5d83f5a8b6f7e2",
+ "system_prompt": "你是一个 Minecraft 服务器管理助手。你可以使用提供的工具来查询信息。",
+ "passed": "2/2",
+ "results": [
+  {
+   "index": 1,
+   "user_input": "清掉全服辐射",
+   "session_id": "ac4-CTI-1",
+   "expect_root": "mek",
+   "expect_syntax": [
+    "mek radiation removeAll"
+   ],
+   "tool_calls": [
+    {
+     "name": "search_mc_commands",
+     "keyword": "radiation removeAll",
+     "limit": 8,
+     "data_dir": "/home/guigui/mc/ac4-roots/CTI/data/plugin_data/astrbot_plugin_mc_manager",
+     "output": "找到 1 个匹配「radiation removeAll」的命令：\n- /mek — 运行时命令（来源未知，权限未知）\n  语法：\n    · mek radiation removeAll\n    · mek build boiler\n    · mek build boiler <start>\n    · mek build boiler empty\n    · mek build boiler empty <start>\n    · mek build evaporation\n    · mek build evaporation <start>\n    · mek build evaporation empty\n    （另有 51 条用法，可用更精确的关键词）\n注：运行时语法是服务端当前命令树已注册的路径，不代表当前调用者必然可执行（仍受权限等级与命令来源限制）。"
+    },
+    {
+     "name": "search_mc_commands",
+     "keyword": "radiation",
+     "limit": 8,
+     "data_dir": "/home/guigui/mc/ac4-roots/CTI/data/plugin_data/astrbot_plugin_mc_manager",
+     "output": "找到 1 个匹配「radiation」的命令：\n- /mek — 运行时命令（来源未知，权限未知）\n  语法：\n    · mek radiation add <magnitude>\n    · mek radiation add <magnitude> <location>\n    · mek radiation add <magnitude> <location> <dimension>\n    · mek radiation addEntity <magnitude>\n    · mek radiation addEntity <targets> <magnitude>\n    · mek radiation get\n    · mek radiation get <location>\n    · mek radiation get <location> <dimension>\n    （另有 51 条用法，可用更精确的关键词）\n注：运行时语法是服务端当前命令树已注册的路径，不代表当前调用者必然可执行（仍受权限等级与命令来源限制）。"
+    }
+   ],
+   "tool_turn_count": 1,
+   "hit_turn_cap": false,
+   "final_text": "全服辐射这类操作需要用 Mekanism 的命令，我已经查到了：\n\n**命令：**\n```\n/mek radiation removeAll\n```\n\n**说明：**\n- 这条命令会清除相应维度或全服范围内所有位置的辐射值（`mek radiation` 系列还有 `add`、`get`、`addEntity` 等子命令，可以单独对某个坐标或实体设置辐射，不用担心这条命令会误操作别的东西）。\n- 它属于模组命令，运行时快照里看不到权限等级，通常要求 OP（权限等级 2 或以上），因此需要在控制台或由 OP 执行。\n- **执行后无法撤销**，正在被辐射伤害的玩家会马上停止受辐射影响。\n\n另外，如果你只想清某个区域的辐射，也请告诉我，辐射是分坐标存量的。有些服务器使用 Chunk 级的辐射数据，只能整体清除，无法按点名式精确定位。需要我先确认一下你服务器版本或 Mekanism 的具体行为吗？还是你直接执行上面的命令即可？",
+   "root_ok": true,
+   "syntax_ok": true,
+   "passed": true
+  },
+  {
+   "index": 2,
+   "user_input": "把 AE2 频道模式换一下",
+   "session_id": "ac4-CTI-2",
+   "expect_root": "ae2",
+   "expect_syntax": [
+    "ae2 channelmode default",
+    "ae2 channelmode infinite",
+    "ae2 channelmode x2",
+    "ae2 channelmode x3",
+    "ae2 channelmode x4"
+   ],
+   "tool_calls": [
+    {
+     "name": "search_mc_commands",
+     "keyword": "channelmode",
+     "limit": 8,
+     "data_dir": "/home/guigui/mc/ac4-roots/CTI/data/plugin_data/astrbot_plugin_mc_manager",
+     "output": "找到 1 个匹配「channelmode」的命令：\n- /ae2 — 运行时命令（来源未知，权限未知）\n  语法：\n    · ae2 channelmode\n    · ae2 channelmode default\n    · ae2 channelmode infinite\n    · ae2 channelmode x2\n    · ae2 channelmode x3\n    · ae2 channelmode x4\n    · ae2 chunklogger\n    · ae2 spatial\n    （另有 9 条用法，可用更精确的关键词）\n注：运行时语法是服务端当前命令树已注册的路径，不代表当前调用者必然可执行（仍受权限等级与命令来源限制）。"
+    },
+    {
+     "name": "search_mc_commands",
+     "keyword": "ae2 channel",
+     "limit": 8,
+     "data_dir": "/home/guigui/mc/ac4-roots/CTI/data/plugin_data/astrbot_plugin_mc_manager",
+     "output": "找到 1 个匹配「ae2 channel」的命令：\n- /ae2 — 运行时命令（来源未知，权限未知）\n  语法：\n    · ae2 channelmode\n    · ae2 channelmode default\n    · ae2 channelmode infinite\n    · ae2 channelmode x2\n    · ae2 channelmode x3\n    · ae2 channelmode x4\n    · ae2 chunklogger\n    · ae2 spatial\n    （另有 9 条用法，可用更精确的关键词）\n注：运行时语法是服务端当前命令树已注册的路径，不代表当前调用者必然可执行（仍受权限等级与命令来源限制）。"
+    }
+   ],
+   "tool_turn_count": 1,
+   "hit_turn_cap": false,
+   "final_text": "AE2 的频道模式命令可以切换，可选模式如下：\n\n| 命令 | 模式 | 效果 |\n|---|---|---|\n| `/ae2 channelmode default` | 默认 | 每条线缆 8 个频道 |\n| `/ae2 channelmode infinite` | 无限 | 不再受频道数量限制 |\n| `/ae2 channelmode x2` | 2 倍 | 容量变为默认的 2 倍 |\n| `/ae2 channelmode x3` | 3 倍 | 容量变为默认的 3 倍 |\n| `/ae2 channelmode x4` | 4 倍 | 容量变为默认的 4 倍 |\n\n不带参数的 `/ae2 channelmode` 一般会显示当前模式。\n\n请告诉我你想切换到哪一种（default、infinite、x2、x3 或 x4），确认后我再执行。需要注意：切换模式后，通常需要重载世界或重启服务端，才能让已有网络按新模式重新计算频道。",
+   "root_ok": true,
+   "syntax_ok": true,
+   "passed": true
+  }
+ ]
+}

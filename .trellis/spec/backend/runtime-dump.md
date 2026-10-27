@@ -60,6 +60,10 @@
   redirect 仅作别名提示，永不进入普通 `matched` usage。
 - 已知限制：多 token 查询的整条归一化串通常不等于/不前缀于根名，因此多词查询多半落在第 4 档、
   按根名排序；短 token（如 `mc`）在忽略分隔符后可能跨词边界假命中（`team create`）。单根 8 条上限不变。
+- **KubeJS `/reload` 会丢非 `RegisterCommandsEvent` 注册的命令**（2026-10-28 实测，CTI 副本）：reload 前 `help ae2`
+  正常返回、reload 后变 `Unknown command or insufficient permissions`；同一副本首轮导出 184 根 / 2038 条，
+  重启后不 reload 再导出 188 根 / 2061 条。首次部署 `runtime_dump.js` 必触发 `/reload`，因此首轮快照可能缺这类根；
+  需要完整命令树时应在脚本已部署（不再 reload）的稳定态导出，或部署后重启服务器再 dump。
 
 ### 3.2 完成信号
 - RCON 响应 = 命令执行结束后 `RconConsoleSource` 的缓冲，所以 `[rd] DONE` 出现即完成；**不用标记文件、不轮询、不做就绪探测**
@@ -133,3 +137,5 @@
 - **Wrong**：归一化时直接用 `-`/空格 split 拆 `->`，或把显式 `->` 当普通子串去匹配 name/usage
   **Correct**：`->` 用哨兵保护整体保留，显式 `->` 只匹配 redirect 结构（`kb/commands.py:346-351`），
   且 redirect 不进入普通 `matched` usage
+- **Wrong**：首次部署脚本触发 `/reload` 后立刻导出，并假定 dispatcher 完整（实测 AE2 根在 reload 后消失，快照少 4 根 / 23 条）
+  **Correct**：脚本已部署、未触发 reload 的稳定态导出；部署后重启服务器再 dump，并在 README 说明该限制

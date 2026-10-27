@@ -1,6 +1,6 @@
 # RCON help 回退采集实施计划
 
-> P0 真机探针已完成并回填，证据见 `research/02-rcon-ab-probe.md`；P1–P7 产品实现、P6 验收、回填后的独立评审和用户开工许可仍未完成，不得因 P0 完成而启动实现。
+> P0 真机探针已完成并回填，证据见 `research/02-rcon-ab-probe.md`；回填后的独立评审已于 2026-10-28 完成（`research/02a-backfill-review.md`），评审提出的开工前 P1 已在 §0 处置。P1–P7 产品实现、P6 验收和用户开工许可仍未完成，不得因 P0 完成而启动实现。
 
 ## Start gate（全部完成前保持 `planning`）
 
@@ -11,7 +11,46 @@
 - [x] P0 已填真实 N、`2N+4` 请求数、片数、字符/字节、RTT、targeted 交换循环耗时，并逐项确认 design 的资源上限和最后 B 后尾随窗口；完整墙钟耗时留待 P6。
 - [x] P0 已记录扫描期间无其他 RCON 写入者的运行前提；双客户端同 ID 重复响应只作故障观察，不作为并发安全证明。
 - [x] 隔离副本的 KubeJS/附属 mod 处理、端口、启动命令和回滚清单已有记录；原实例未被修改。
-- [ ] 回填后的独立评审和用户后续开工许可仍未完成；不得以 P0 或文档回填替代 `task.py start` 前的审批。
+- [x] 回填后的独立评审已完成（2026-10-28），报告见 `research/02a-backfill-review.md`：无 P0，P1-1/P1-2/P1-3 与 4 处证据表述已在 §0 修订。
+- [ ] 用户开工许可仍未给出；不得以 P0 或文档回填替代 `task.py start` 前的审批。
+
+## 0. 验证命令、环境门槛与方案修订（2026-10-28 评审回填）
+
+本节优先于后文 P0–P7 中与之冲突的条款。实测依据：`research/02a-backfill-review.md`。
+
+### 0.1 ruff 验证门（原写法不可执行）
+
+实测（本机，2026-10-28）：对本仓既有文件跑 `ruff format` 会整文件重排（`main.py` 一次 422 行、`rcon_client.py` 同样）；`ruff check` 对既有文件本来就有大量历史告警（`UP031`/`UP045`/`W293` 等）；workspace-write 沙箱下默认 `.ruff_cache` 只读，ruff 会直接以 “Read-only file system” 失败。因此：
+
+- 统一加可写缓存：`export RUFF_CACHE_DIR=/tmp/ruff-cache`（或仓库外其它可写目录）。
+- **新增文件**（`rcon_help.py`、`tests/test_rcon_help.py`）：`ruff format` 与 `ruff check` 必须干净，不要引入 `%` 格式化或 `Optional` 之类仓库既有风格。
+- **既有文件**（`main.py`、`rcon_client.py`、`kb/commands.py`、`tests/test_commands.py`）：**不跑** `ruff format`（会产生无关 diff，违反 “不做全仓 reformat”）；`ruff check` 只要求**规则类型集合不扩大**，基线用 `git show HEAD:<file> | ruff check --stdin-filename <file> -` 对比，不追求清零。
+- 后文各阶段验证命令中的 ruff 行一律按本节执行；`python -m compileall`、`unittest`、`node --check`、`git diff --check` 照旧。
+
+### 0.2 KubeJS 环境门槛（只认 mods/ jar 元数据）
+
+`design.md` 8.1 原写法把本机 `kubejs/` 目录也算“已安装证据”，会让“删了 KubeJS mod 但留下脚本目录”的真实用户被永久拒绝扫描。修订为：
+
+- 只认 `mods/` 中可识别的 KubeJS jar（文件名或 `META-INF/mods.toml`/`mode.toml` 元数据，大小写不敏感）。
+- 发现 `kubejs/` 目录只在回执/日志给**警告**，不拒绝扫描；跨机无法证明远程无 KubeJS 的限制不变。
+- P0 期间把副本的 `kubejs/` 目录移走只是为了让副本进入无 KubeJS 状态，不是生产规则。
+
+### 0.3 Farming no-KubeJS 改为最小 1.20.1 包
+
+Farming-nokubejs 两次起服失败（`Item: tide:cooked_fish does not exist`），且原归因（物品注册在 `farmingtales-kubejs-support`）经复核不成立：该内嵌 jar 无 `tide`/`cooked_fish` 字符串，Tide 自身 jar 含 162 处 `cooked_fish`。按用户 2026-10-28 决定，P6 的 1.20.1 fallback 验收改用**最小包**：
+
+- 新目录 `/<隔离根>/Farming-minimal`（不得覆盖已有副本）：Forge 1.20.1 + Vinery（`letsdo-vinery-forge-*.jar`）+ 其声明依赖 + 原版数据包即可，**不含 KubeJS**，独立 server/RCON 端口、独立世界。
+- 验收目标：`wine age <years>` / `wine info` 出现在 RCON 快照并可查询；不要求与 Farming 副本命令集合一致。
+- Farming-kubejs 副本保留，仅用于 AC6 分环境差分（结构化导出 vs RCON A/B 对照）。
+- 原 Farming / Farming-nokubejs 不再作为 fallback 验收目标；Farming 副本的 KubeJS 移除/repack 只作 P0 传输结论的环境，不再继续排障。
+
+### 0.4 其它必须照做的落地细节
+
+- **能力探针不计入预算**：`help help` / `help 1` / 不存在命令属能力探针，另计请求数，`2N+4` 只算正式扫描；`help 1` 返回纯文本，不送 A 解析。
+- **入口级测试加载方式**：`main.py` 使用相对导入，`import main` 会 ImportError；测试必须按包名 `astrbot_plugin_mc_manager.main` 导入，并 patch `StarTools.get_data_dir` 指向临时目录。
+- **非管理员测试前提**：`admin_ids` 为空等于所有人都是管理员（`main.py:467`）；AC5 的“非管理员零 RCON”用例必须显式配置非空 `admin_ids`，否则假通过。
+- **Java 21**：1.20.1 副本 `run.sh` 裸 `java` 会落到 17 并 `UnsupportedClassVersionError`；启动前显式设置 `JAVA_HOME` 或写绝对 java21 路径，并把实际命令记入证据。
+- **回滚清单以手术记录为准**：Farming core 内嵌 jar 经过第二次 repack，当前剩 12 个（原 18）；回滚依据是 `probe-disabled-mods/surgery-report.json`，`MANIFEST.md` 里“剩 14 个”已过时。
 
 ## P0（start 前）：双版本隔离副本与受控探针
 
@@ -24,7 +63,7 @@
 | CTI0.46 / 1.19.2 | 保留 KubeJS | A/B 探针、动态命令可见性、P6 AC6 对照 |
 | CTI0.46 / 1.19.2 | 移除 KubeJS 及会缺依赖崩服的附属 mod | P6 AC1/AC2/AC4 fallback 验收 |
 | Farming / 1.20.1 | 保留 KubeJS | A/B 探针、P6 AC6 对照 |
-| Farming / 1.20.1 | 移除 KubeJS 及必需附属 mod | `wine` 浅树、1.20.1 fallback 验收 |
+| 1.20.1 最小包（非 Farming 副本） | 无 KubeJS：Forge 1.20.1 + Vinery + 依赖 | `wine` 浅树、1.20.1 fallback 验收（见 §0.3） |
 
 - P0 已创建并停服保留隔离副本；后续 P6 只能复用这些隔离目录或按同样规则新建，不操作原实例。原目录、启动脚本、运行状态、端口和 mods 清单已记录在 P0 证据中；Farming 副本必须沿用 Java 21 和本地拒连代理前置。
 - 建议隔离根为 `/home/guigui/mc/rcon-help-probe/`。沿用归档 `verify_copy.sh` 的最小副本方式，排除世界、备份、日志和派生产物；先读取 `level-name` 并把实际世界目录加入排除项。每个目标目录必须不存在，若已存在则停止并换带时间戳的新目录，不覆盖或 `rm -rf` 复用。示例：
@@ -41,7 +80,7 @@
 
   其余三个副本按上表映射源目录和目标目录，使用同样的存在性检查与排除规则；若实际世界目录不同，必须另行排除。若原服正在写入，先使用用户已有快照/停服窗口获得一致副本；不得在写入中的权威世界目录上盲目执行。
 - 每个副本使用独立 server/RCON 端口和独立数据目录，启动前记录实际端口与命令。只能从副本目录启动，不能连接原实例端口。
-- no-KubeJS 副本先用 `find <副本>/mods -maxdepth 1 -type f -print` 和 mod metadata 清单识别 KubeJS 及声明必需依赖的附属 mod。把**逐项确认的显式路径**移动到副本内 `probe-disabled-mods/`，同时移走该副本的 KubeJS 脚本目录以防环境门槛把遗留目录误判为已安装；不使用未经审阅的宽泛通配符删除 mod。
+- no-KubeJS 副本先用 `find <副本>/mods -maxdepth 1 -type f -print` 和 mod metadata 清单识别 KubeJS 及声明必需依赖的附属 mod。把**逐项确认的显式路径**移动到副本内 `probe-disabled-mods/`，同时移走该副本的 KubeJS 脚本目录，让副本处于无 KubeJS 状态（生产门槛只认 mods/ jar，见 §0.2）；不使用未经审阅的宽泛通配符删除 mod。
 - 回滚以副本内移动清单逐项 `mv` 回原相对路径，并恢复副本的端口/脚本；原实例不执行这些移动。副本启动失败时先看缺失依赖日志，再补齐附属 mod 清单，不修改原服来“修复”副本。
 
 ### P0.2 传输与 help 探针
@@ -66,7 +105,7 @@
 |---|---|---|---|
 | 根数 N | 183 | 179 | 182 |
 | 预算请求数 `2N+4` | 370 | 362 | 368 |
-| 实际 A/B 请求数（正式扫描，不含独立能力探针） | 370 | 362 | 368 |
+| 正式扫描 A/B 请求数（= `2N+4`；同一 socket 的 empty-detail 探针另计 +10/+8/+8，不计入预算） | 370 | 362 | 368 |
 | 根 help 片数/字符/字节 | 2 / 7122 / 7142 | 2 / 6892 / 6912 | 3 / 10875 / 10905 |
 | `help execute` 片数/字符/字节 | 1 / 425 / 旧样本未汇总 | 1 / 425 / 旧样本未汇总 | 1 / 593 / 旧样本未汇总 |
 | 空 targeted 包序列（完整 samples 重算） | 30 个空包，A→B；原摘要前 20；无 no-packet | 28 个空包，A→B；原摘要前 20；无 no-packet | 31 个空包，A→B；原摘要前 20；无 no-packet |
@@ -100,8 +139,8 @@
 ```bash
 /home/guigui/code/AstrBot/.venv/bin/python -m unittest discover -s tests -p 'test_rcon_help.py' -v
 /home/guigui/code/AstrBot/.venv/bin/python -m compileall -q rcon_client.py rcon_help.py tests/test_rcon_help.py
-ruff format rcon_client.py rcon_help.py tests/test_rcon_help.py
-ruff check rcon_client.py rcon_help.py tests/test_rcon_help.py
+RUFF_CACHE_DIR=/tmp/ruff-cache ruff check rcon_client.py rcon_help.py tests/test_rcon_help.py
+RUFF_CACHE_DIR=/tmp/ruff-cache ruff format --check rcon_help.py tests/test_rcon_help.py
 ```
 
 **P1 回滚点**：删除 `rcon_help.py` / `tests/test_rcon_help.py`，只回退 `rcon_client.py` 新增方法；旧快照和普通 RCON 路径不动。
@@ -126,8 +165,8 @@ ruff check rcon_client.py rcon_help.py tests/test_rcon_help.py
 ```bash
 /home/guigui/code/AstrBot/.venv/bin/python -m unittest discover -s tests -p 'test_rcon_help.py' -v
 /home/guigui/code/AstrBot/.venv/bin/python -m compileall -q rcon_help.py tests/test_rcon_help.py
-ruff format rcon_help.py tests/test_rcon_help.py
-ruff check rcon_help.py tests/test_rcon_help.py
+RUFF_CACHE_DIR=/tmp/ruff-cache ruff format rcon_help.py tests/test_rcon_help.py
+RUFF_CACHE_DIR=/tmp/ruff-cache ruff check rcon_help.py tests/test_rcon_help.py
 ```
 
 **P2 回滚点**：只回退解析和夹具；尚未接发布入口，旧快照不受影响。
@@ -153,8 +192,8 @@ ruff check rcon_help.py tests/test_rcon_help.py
 /home/guigui/code/AstrBot/.venv/bin/python -m unittest discover -s tests -p 'test_rcon_help.py' -v
 /home/guigui/code/AstrBot/.venv/bin/python -m unittest discover -s tests -p 'test_commands.py' -v
 /home/guigui/code/AstrBot/.venv/bin/python -m compileall -q rcon_help.py kb/commands.py tests/test_rcon_help.py tests/test_commands.py
-ruff format rcon_help.py tests/test_rcon_help.py
-ruff check rcon_help.py tests/test_rcon_help.py
+RUFF_CACHE_DIR=/tmp/ruff-cache ruff format rcon_help.py tests/test_rcon_help.py
+RUFF_CACHE_DIR=/tmp/ruff-cache ruff check rcon_help.py tests/test_rcon_help.py
 ```
 
 **P3 回滚点**：回退编排，删除本次临时发布目录；不得删除测试前已有旧快照。发布逻辑若需改共享 schema，停止并回父设计。
@@ -167,6 +206,9 @@ ruff check rcon_help.py tests/test_rcon_help.py
 - 修改 `kb/commands.py`：RCON 提示增加“纯根命令可能未收录”。
 - 修改 `tests/test_commands.py`：两种 producer 提示、vanilla 合并和 RCON 纯根边界回归。
 - 修改既有 `tests/test_rcon_help.py`：增加轻量 `main.py` 入口级测试类，不另建测试文件；覆盖权限、单飞、环境门槛、回执和取消/重载生命周期。
+  - 入口测试按包名加载 `astrbot_plugin_mc_manager.main`（`main.py` 用相对导入，`import main` 会 ImportError），并 patch `StarTools.get_data_dir` 指向临时目录。
+  - “非管理员零 RCON”用例必须显式配置非空 `admin_ids`：空列表等于所有人都是管理员（`main.py:467`），否则用例会假通过。
+  - 环境门槛只认 `mods/` 中的 KubeJS jar；`kubejs/` 目录只产生警告，不拒绝扫描（见 §0.2），并补对应正/负用例。
 
 ### 必测行为
 
@@ -184,8 +226,8 @@ ruff check rcon_help.py tests/test_rcon_help.py
 /home/guigui/code/AstrBot/.venv/bin/python -m unittest discover -s tests -p 'test_commands.py' -v
 /home/guigui/code/AstrBot/.venv/bin/python -m unittest discover -s tests -p 'test_rcon_help.py' -v
 /home/guigui/code/AstrBot/.venv/bin/python -m compileall -q main.py rcon_client.py rcon_help.py kb/commands.py tests/
-ruff format main.py rcon_client.py rcon_help.py kb/commands.py tests/test_commands.py tests/test_rcon_help.py
-ruff check main.py rcon_client.py rcon_help.py kb/commands.py tests/test_commands.py tests/test_rcon_help.py
+RUFF_CACHE_DIR=/tmp/ruff-cache ruff check main.py rcon_client.py rcon_help.py kb/commands.py tests/test_commands.py tests/test_rcon_help.py
+RUFF_CACHE_DIR=/tmp/ruff-cache ruff format --check tests/test_commands.py rcon_help.py tests/test_rcon_help.py
 ```
 
 **P4 回滚点**：回退新指令和提示即可；已发布 canonical 文件仍可由旧查询读取，无需改 schema。
@@ -198,8 +240,8 @@ ruff check main.py rcon_client.py rcon_help.py kb/commands.py tests/test_command
 /home/guigui/code/AstrBot/.venv/bin/python -m compileall -q main.py rcon_client.py rcon_help.py runtime_dump.py tools/ kb/ tests/
 node --check assets/runtime_dump.js
 /home/guigui/code/AstrBot/.venv/bin/python -m unittest discover -s tests -v
-ruff format main.py rcon_client.py rcon_help.py kb/commands.py tests/test_commands.py tests/test_rcon_help.py
-ruff check main.py rcon_client.py rcon_help.py kb/commands.py tests/test_commands.py tests/test_rcon_help.py
+RUFF_CACHE_DIR=/tmp/ruff-cache ruff check main.py rcon_client.py rcon_help.py kb/commands.py tests/test_commands.py tests/test_rcon_help.py
+RUFF_CACHE_DIR=/tmp/ruff-cache ruff format --check tests/test_commands.py rcon_help.py tests/test_rcon_help.py
 git diff --check
 ```
 
@@ -213,9 +255,15 @@ git diff --check
 
 只使用 P0 建立的隔离副本；证据写入 `.trellis/tasks/10-25-rcon-help-command-fallback/research/03-live-acceptance.md`。每项记录版本、副本、命令、时间、原始回执、请求/包统计、快照路径和 SHA-256。
 
-P0 已确认的环境前置：Farming 1.20.1 使用 Java 21，启动阶段以本地拒连代理避免 Citadel.setup 联网卡住；CTI no-KubeJS 需剔除 `cti-1.2.2.jar` 中 7 个 biome 的 `kubejs:*` worldgen 引用。Farming no-KubeJS 目前因 `tide:cooked_fish` 缺失无法起服，P6 前必须清理 Tide 相关 tag/recipe 或更换测试包；这不是 P0 传输结论的失败。
+P0/P1 已确认的环境前置（2026-10-28 修订）：
 
-- [ ] **AC1 无 KubeJS 闭环**：no-KubeJS 副本只配置 RCON，`kb.enabled=false`/无本机 `mc_server_dir` 也完成 `/mc_kb_rcon_scan` 与查询。Farming 验证 `wine age <years>` / `wine info`；CTI 使用该副本结构化对照中实际存在的浅树模组命令，不假定 CTI 有 `wine`。
+- 1.20.1 一律 Java 21：显式 `JAVA_HOME` 或绝对 java21 路径，副本 `run.sh` 裸 `java` 会落到 17 并报 `UnsupportedClassVersionError`；启动命令写进 `03-live-acceptance.md`。
+- Farming 1.20.1 启动阶段需要本地拒连代理避免 Citadel.setup 联网卡住；CTI no-KubeJS 需剔除 `cti-1.2.2.jar` 中 7 个 biome 的 `kubejs:*` worldgen 引用。
+- **1.20.1 fallback 验收改用最小包**（§0.3）：`Farming-minimal`（Forge 1.20.1 + Vinery + 依赖、无 KubeJS、独立端口/世界），不再对 Farming-nokubejs 继续排障；`wine age <years>` / `wine info` 在该最小包验证。
+- 回滚清单以 `probe-disabled-mods/surgery-report.json` 为准（Farming core repack 后剩 12 个内嵌 jar，`MANIFEST.md` 的 14 个已过时）；副本目录、端口、启动命令和移动清单必须与之一致。
+- 扫描期间要求无其他 RCON 写入者；采样时记录该前提，不把一次未复现当作并发安全证明。
+
+- [ ] **AC1 无 KubeJS 闭环**：no-KubeJS 副本只配置 RCON，`kb.enabled=false`/无本机 `mc_server_dir` 也完成 `/mc_kb_rcon_scan` 与查询。1.20.1 用最小包（§0.3）验证 `wine age <years>` / `wine info`；CTI 使用该副本结构化对照中实际存在的浅树模组命令，不假定 CTI 有 `wine`。
 - [ ] **AC2 传输完整**：双版本各至少一个真实响应超过 4096 字符（根 help 或实测选定的长 targeted help），保存 A 首包→B→A 完→B 完的 id/片序列；`help execute` 只按实际长度记录，不用短响应冒充多包证据。扫描后普通 `list` 响应正确，不得以 idle 时间作为完整性证据。
 - [ ] **AC3 解析与提示**：真机浅树、redirect/压缩形态与离线夹具一致；查询显示 `producer=rcon`、深分支压缩和纯根可能未收录。
 - [ ] **AC4 可检验故障关闭**：结合 P1 fake server 的 EOF、截断、错/未知 id、B 缺失/窗口内尾随、超时、超限、静默尾随成功和旧 id 迟到，以及 P3 确定性 fake-server 的首尾根集合变化，证明旧快照 hash 不变、后续普通命令不受污染。空 targeted 不触发失败；不宣称任意中间删片、同根集热替换或外部 RCON 并发写入必然可检测。
@@ -241,7 +289,8 @@ P0 已确认的环境前置：Farming 1.20.1 使用 Java 21，启动阶段以本
 ```bash
 /home/guigui/code/AstrBot/.venv/bin/python -m unittest discover -s tests -v
 /home/guigui/code/AstrBot/.venv/bin/python -m compileall -q main.py rcon_client.py rcon_help.py runtime_dump.py tools/ kb/ tests/
-ruff check main.py rcon_client.py rcon_help.py kb/commands.py tests/test_commands.py tests/test_rcon_help.py
+RUFF_CACHE_DIR=/tmp/ruff-cache ruff check main.py rcon_client.py rcon_help.py kb/commands.py tests/test_commands.py tests/test_rcon_help.py
+RUFF_CACHE_DIR=/tmp/ruff-cache ruff format --check tests/test_commands.py rcon_help.py tests/test_rcon_help.py
 git diff --check
 ```
 

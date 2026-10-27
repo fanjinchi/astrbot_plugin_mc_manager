@@ -53,20 +53,20 @@
 |---|---|---|---|
 | 根数 N | **183** | **182** | **179** |
 | 预算请求数 `2N+4` | 370 | 368 | 362 |
-| 实际 A/B 请求数（正式扫描） | 370 | 368 | 362 |
+| 正式扫描 A/B 请求数（等于 `2N+4` 公式值；同一 socket 的 empty-detail 探针另计 +10/+8/+8） | 370 | 368 | 362 |
 | 根 help 片数 | 2 | 3 | 2 |
 | 根 help 字符 / 字节 | 7122 / 7142 | 10875 / 10905 | 6892 / 6912 |
 | 根 help 每包字节 | 4106, 3036 | 4106, 4106, 2693 | 4106, 2806 |
 | `help execute` 字符 | 425（单包） | 593（单包） | 425（单包） |
 | 空 targeted 包（完整 samples 重算） | 30 个根；原摘要仅前 20 | 31 个根；原摘要仅前 20 | 28 个根；原摘要仅前 20 |
-| 中位/最大 RTT（本机回环，B 往返） | 中位 ≈0ms / 0.95ms（首个交换 41.1ms） | 中位 ≈0ms / 40.8ms（首个交换） | 中位 ≈0ms / 0.9ms |
+| 首个 / 末次根 help 的 B 往返 RTT（本机回环） | 40.73ms / 41.08ms | 39.92ms / 40.22ms（样本最大 40.79ms） | 40.57ms / 40.33ms |
 | targeted 交换循环耗时（本机回环） | 0.02s | 0.08s | 0.03s |
 | 首尾根集合一致 | ✅ | ✅ | ✅ |
 | 最后 B 后尾随窗口（5s） | 无包 | 无包 | 无包 |
 | 后续普通命令隔离 | ✅ `list` 正常 | ✅ | ✅ |
 
 - 上述 0.02/0.08/0.03s 只覆盖 **N 次 targeted 交换循环**，不含首次根 help、额外 empty-detail、末次根 help 和最后至少 5 秒尾随观察；原始 JSON 的 `scan_seconds` 也只是该循环字段，本轮未记录完整墙钟耗时，P6 必须另行采集，不能用这些值校准完整 300s 总预算。未来脚本分别输出 `targeted_loop_seconds` 和包含上述阶段的 `wall_clock_seconds`。RTT 只代表本机回环，时间戳精度 1ms，因此出现取整噪声；真实网络 RTT 也必须在 P6 实测。
-- targeted 样本（`help <root>`）在本轮都是单包；根 help 必然多包，接收逻辑不能只读一包。
+- targeted 样本（`help <root>`）绝大多数是单包；**Farming 的 `help gamerule` 实测 2 包 / 6633 字符**（`samples.gamerule.a_packet_count=2`），是先前表格漏掉的正面 targeted 多包证据。根 help 必然多包，接收逻辑不能只读一包。
 
 ## 4. 关键机制验证
 
@@ -81,7 +81,7 @@ CTI 额外证据：`KubeJS 动态命令 researchdump` 在根 help 里出现 `/re
 - 根级：`/xp -> experience`。
 - targeted：`/execute as <targets> -> execute`。
 - 压缩记号仍在 syntax 里：`/execute run ...`、`(block|score|…) `。
-**结论**：redirect 归一按 `-> <target>` 处理即可；design 里“目标为 root 时 redirect 为 `...`”的写法与实际输出不符——实测 root 目标是 `-> execute` 这种**名字形式**，`...` 只作为压缩占位出现在 usage 尾部。P2 解析器与测试夹具要按实测形态写。
+**结论**：redirect 归一按 `-> <target>` 处理即可。实测 root 目标是 `-> execute` 这种**名字形式**，`...` 只作为压缩占位出现在 usage 尾部；旧 design 的“目标为 root 时 redirect 为 `...`”文案已按本结论修正，当前 design 不再保留该写法。P2 解析器与测试夹具按实测形态写。
 
 ### 4.4 立即连写 A+B（禁止序列）
 - Farming：4 包，顺序 `A,A,A,B`，chunks `4110/4110/2790`；CTI：3 包 `A,A,B`，chunks `4110/3040/93`；均无断连、无错 id。
@@ -124,7 +124,7 @@ CTI 额外证据：`KubeJS 动态命令 researchdump` 在根 help 里出现 `/re
 ## 5. 对设计/实施的影响（评审用）
 
 1. **空包判据成立**：A 首包用“收到同 id 包（含 0 字符）”即可，不需要额外超时兜底；本环境没有“完全无包”分支。
-2. **redirect 归一按 `-> name`**：design 里 root 目标写成 `...` 与实际不符，P2 解析器/夹具需修正文案。
+2. **redirect 归一按 `-> name`**：实测 root 目标是名字形式，`...` 只在 usage 尾部作压缩占位；旧 design 文案已修正，P2 解析器/夹具按实测形态写。
 3. **多包阈值**：根 help 在 7k–11k 字符、2–3 包；targeted 样本单包。设计里“>4096 必须多包接收”得到独立证据。
 4. **尾随窗口**：最后 B 后 5s 无包；结合 4.7 的重复投递，窗口不宜过短，建议实现内部预算/常量 `trailing_window ≥ 1.5s`，不新增用户配置；这只是本次回环观测校准，不是绝对完整性保证。
 5. **并发前提必须显著提示**：4.7 说明外部写入者会破坏 1:1 判据，管理员回执/README 要写清楚“扫描期间暂停其他 RCON 客户端”。
@@ -132,7 +132,8 @@ CTI 额外证据：`KubeJS 动态命令 researchdump` 在根 help 里出现 `/re
 
 ## 6. 未完成 / 阻塞项
 
-- **Farming-nokubejs 未能起服**：移除 KubeJS 后 datapack 加载失败 `Item: tide:cooked_fish does not exist`——该整合包把 Tide 鱼类物品注册放在 KubeJS（farmingtales-kubejs-support）里，tag/recipe 仍在引用。P6 前需要继续清理 tide 相关 tag/recipe，或换一个不依赖 KubeJS 注册物品的测试包；**这是 P6 环境阻塞，不是 P0 传输结论的阻塞**。
+- **Farming-nokubejs 未能起服**：移除 KubeJS 后 datapack 加载失败 `Item: tide:cooked_fish does not exist`；继续排查还遇到第二次 repack 后的启动失败。**归因订正（2026-10-28 复核）**：原记录称“Tide 鱼类物品注册在 `farmingtales-kubejs-support`”，实测该内嵌 jar（从 `core-1.0.9.jar` 的 `META-INF/jarjar/` 取出）里 `tide` 与 `cooked_fish` 字符串计数均为 0，而 Tide 自身 jar 含 162 处 `cooked_fish` 引用，因此该归因不成立，缺物品的真实原因未定位。
+- **环境方案调整（2026-10-28 用户决定）**：Farming no-KubeJS 不再复用 Farming 副本，改用**最小 1.20.1 Forge + Vinery 包**（独立目录、无 KubeJS、Java 21、独立 RCON 端口）做 fallback 验收，以复现 `wine age <years>` / `wine info`；这是 P6 环境方案调整，不是 P0 传输结论的阻塞。Farming-kubejs 副本仍用于 AC6 分环境差分。
 - 双客户端“双份响应”的机制未定位（只记录形态）；一次未复现不构成并发安全证据。
 - 真实网络 RTT、完整墙钟耗时、多包在真实网络下的分片行为未测（本表全是回环）；本轮只有 targeted 交换循环耗时，P6 必须补采完整墙钟。
 - 扫描期间“无其他写入者”是运行前提，插件无法自证；P6 验收要记录当时的写入者状态。

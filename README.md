@@ -282,6 +282,9 @@ AstrBot 与 MC 不同机时，把 `runtime_dump/` 目录拷到插件数据目录
 全部命中同一根才返回（`quest editing` 与 `editing quest` 等价），`channel mode` / `channel_mode` /
 `channel-mode` 都命中 `channelmode`，同根内覆盖全部 token 的 usage 优先展示。边界：
 
+- 首次部署 `runtime_dump.js` 会触发一次 `/reload`；实测部分模组命令（如 AE2 的 `/ae2 …`）在 reload 后会从命令树消失，
+  此时导出的快照会缺这些根。需要完整命令树时，重启服务器后再执行一次 `/mc_kb_dump`（脚本已部署，不会再 reload）。
+
 - 语法来自当前 dispatcher 已注册的完整 usage 路径（`getAllUsage(..., restricted=false)`），
   **不代表当前 RCON/玩家必然可执行**：实际执行仍受权限等级、命令来源和执行体内部检查限制。
 - `redirect`（别名指向）只作为提示展示，不作为可直接拼装的完整命令。
