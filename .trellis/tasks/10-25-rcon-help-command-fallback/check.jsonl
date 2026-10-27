@@ -1,6 +1,27 @@
-{"file":".trellis/spec/backend/quality-guidelines.md","reason":"检查 RCON 真机证据和通用性。"}
-{"file":".trellis/spec/backend/error-handling.md","reason":"检查超时、错 id、重连和失败关闭。"}
-{"file":".trellis/spec/backend/runtime-dump.md","reason":"检查普通 RCON 与 dump 契约不回归。"}
-{"file":".trellis/tasks/10-25-mod-command-kb/design.md","reason":"核对共享发布契约和 KubeJS 优先级。"}
-{"file":".trellis/tasks/10-25-rcon-help-command-fallback/prd.md","reason":"逐条核对 RCON fallback AC1–AC7。"}
-{"file":".trellis/tasks/10-25-rcon-help-command-fallback/research/01-command-enumeration.md","reason":"核对多包、无换行、自定义 help 和差分边界。"}
+{"file":".trellis/spec/backend/quality-guidelines.md","reason":"检查权限、编译、unittest、改动文件 ruff 和真机证据。"}
+{"file":".trellis/spec/backend/error-handling.md","reason":"检查事件异常边界、普通 RCON 语义、扫描失败关闭和资源清理。"}
+{"file":".trellis/spec/backend/runtime-dump.md","reason":"检查普通 RCON、_send_lock 和 KubeJS dump 契约不回归。"}
+{"file":".trellis/spec/backend/directory-structure.md","reason":"检查低层传输、查询和 main 入口没有跨层拼装。"}
+{"file":".trellis/tasks/10-25-rcon-help-command-fallback/prd.md","reason":"逐条核对 RCON fallback AC1–AC7 和不可检测边界。"}
+{"file":".trellis/tasks/10-25-rcon-help-command-fallback/design.md","reason":"核对 A 首包后 B、共享锁、纯根证据、2N+4 和发布规则。"}
+{"file":".trellis/tasks/10-25-rcon-help-command-fallback/implement.md","reason":"核对 P0 start gate、P1–P7 验证和回滚证据。"}
+{"file":".trellis/tasks/10-25-rcon-help-command-fallback/research/01-command-enumeration.md","reason":"核对双版本 HelpCommand/RconClient 源码依据和 smart usage 限制。"}
+{"file":".trellis/tasks/10-25-rcon-help-command-fallback/research/02-rcon-ab-probe.md","reason":"核对已回填的 P0 实测值、redirect 真实形态、字段限制和 P6 环境阻塞。"}
+{"file":".trellis/tasks/10-25-rcon-help-command-fallback/research/probe_rcon_ab.py","reason":"复核污染、正常 A 包、同 ID 重复响应和 RTT 记录逻辑修正，不运行探针。"}
+{"file":".trellis/tasks/10-25-rcon-help-command-fallback/research/p0-farming-kubejs.json","reason":"按需核对 Farming 原始包序列、2N+4、截断污染和同 ID 双份响应；原始文件未改写。"}
+{"file":".trellis/tasks/10-25-rcon-help-command-fallback/research/p0-cti-kubejs.json","reason":"按需核对 CTI-kubejs 原始包序列、2N+4、截断污染和同 ID 双份响应；原始文件未改写。"}
+{"file":".trellis/tasks/10-25-rcon-help-command-fallback/research/p0-cti-nokubejs.json","reason":"按需核对 CTI-nokubejs 原始包序列、2N+4、旧污染假阴性和同 ID 双份响应；原始文件未改写。"}
+{"file":".trellis/tasks/10-25-mod-command-kb/prd.md","reason":"核对父 AC、三子任务边界和最终集成要求。"}
+{"file":".trellis/tasks/10-25-mod-command-kb/design.md","reason":"核对共享 schema、查询合并和生产者显式优先级。"}
+{"file":".trellis/tasks/archive/2026-10/10-25-kubejs-command-dump/implement.md","reason":"核对子任务一已完成证据和共享契约，不重做主路径。"}
+{"file":".trellis/tasks/archive/2026-10/10-25-kubejs-command-dump/verify_live.py","reason":"复用真实快照逐条 syntax、count、hash 和跨机验收方法。"}
+{"file":".trellis/tasks/archive/2026-10/10-25-kubejs-command-dump/verify_farming.sh","reason":"核对 Farming 隔离环境、清理和恢复证据。"}
+{"file":".trellis/tasks/archive/2026-10/10-25-kubejs-command-dump/verify_copy.sh","reason":"核对跨机隔离 data_dir 和快照发布验证。"}
+{"file":"rcon_client.py","reason":"检查 execute_async 签名/重试不变和扫描共用 _send_lock。"}
+{"file":"main.py","reason":"检查 /mc_kb_rcon_scan 权限、单飞、环境门槛和跨机 data_dir。"}
+{"file":"kb/commands.py","reason":"检查共享校验/原子发布、RCON 提示和 KubeJS 纯根回归。"}
+{"file":"kb/__init__.py","reason":"检查 kb.enabled=false 时 data_dir 与查询仍可用。"}
+{"file":"runtime_dump.py","reason":"检查 KubeJS 主路径不被 fallback 自动触发或阻断。"}
+{"file":"tests/test_commands.py","reason":"运行共享 schema、查询、redirect 和 producer 回归。"}
+{"file":"tests/test_runtime_dump.py","reason":"运行既有 dump 和 RCON 错误语义回归。"}
+{"file":"tests/test_dump_script.py","reason":"运行 KubeJS 命令导出契约回归。"}

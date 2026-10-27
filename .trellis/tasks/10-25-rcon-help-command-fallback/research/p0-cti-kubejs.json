@@ -1,0 +1,2400 @@
+{
+  "copy": "CTI-kubejs",
+  "host": "127.0.0.1",
+  "port": 25580,
+  "started_at": "2026-10-27T23:54:02+0800",
+  "args": {
+    "scan": true,
+    "trailing": 2.0
+  },
+  "phases": {
+    "negative_immediate_ab": {
+      "chunks": [
+        4110,
+        3040,
+        93
+      ],
+      "packets": [
+        {
+          "rid": 900001,
+          "type": 0,
+          "bytes": 4106,
+          "chars": 4096,
+          "t": 0.001
+        },
+        {
+          "rid": 900001,
+          "type": 0,
+          "bytes": 3036,
+          "chars": 3026,
+          "t": 0.001
+        },
+        {
+          "rid": 900002,
+          "type": 0,
+          "bytes": 89,
+          "chars": 79,
+          "t": 0.042
+        }
+      ],
+      "packet_count": 3,
+      "unknown_ids": 0,
+      "first_rid_order": [
+        900001,
+        900001,
+        900002
+      ]
+    },
+    "initial_help": {
+      "cmd": "help",
+      "a_id": 500000,
+      "b_id": 500001,
+      "anomalies": [
+        "A 包时间早于 B 发送时间"
+      ],
+      "t_send_a": 0.0,
+      "t_send_b": 0.001,
+      "t_recv_b": 0.042,
+      "trailing": [],
+      "ok": true,
+      "a_packets": [
+        {
+          "bytes": 4106,
+          "chars": 4096,
+          "t": 0.001
+        },
+        {
+          "bytes": 3036,
+          "chars": 3026,
+          "t": 0.001
+        }
+      ],
+      "a_packet_count": 2,
+      "a_bytes": 7142,
+      "a_chars": 7122,
+      "a_empty": false,
+      "rtt_a_ms": 1.0,
+      "rtt_b_ms": 40.73,
+      "b_text_ignored": "Unknown or incomplete command, see below for error\nprobe_b_500001_422917<--[HERE]\n"
+    },
+    "root_parse": {
+      "roots_by_newline": 183,
+      "roots_by_slash": 333,
+      "sample": [
+        "advancement",
+        "attribute",
+        "execute",
+        "bossbar",
+        "clear",
+        "clone",
+        "data",
+        "datapack",
+        "debug",
+        "defaultgamemode",
+        "difficulty",
+        "effect"
+      ]
+    },
+    "empty_targeted_detail": {
+      "researchdump": {
+        "ok": true,
+        "a_packets": [
+          {
+            "bytes": 10,
+            "chars": 0,
+            "t": 0.0
+          }
+        ],
+        "a_bytes": 10,
+        "a_chars": 0,
+        "a_empty": true,
+        "b_text_ignored": "Unknown or incomplete command, see below for error\nprobe_b_500369_9a3354<--[HERE]\n",
+        "root_help_line": "/researchdump"
+      },
+      "stop": {
+        "ok": true,
+        "a_packets": [
+          {
+            "bytes": 10,
+            "chars": 0,
+            "t": 0.0
+          }
+        ],
+        "a_bytes": 10,
+        "a_chars": 0,
+        "a_empty": true,
+        "b_text_ignored": "Unknown or incomplete command, see below for error\nprobe_b_500371_c8e958<--[HERE]\n",
+        "root_help_line": "/stop"
+      },
+      "seed": {
+        "ok": true,
+        "a_packets": [
+          {
+            "bytes": 10,
+            "chars": 0,
+            "t": 0.0
+          }
+        ],
+        "a_bytes": 10,
+        "a_chars": 0,
+        "a_empty": true,
+        "b_text_ignored": "Unknown or incomplete command, see below for error\nprobe_b_500373_528da2<--[HERE]\n",
+        "root_help_line": "/seed"
+      },
+      "reload": {
+        "ok": true,
+        "a_packets": [
+          {
+            "bytes": 10,
+            "chars": 0,
+            "t": 0.0
+          }
+        ],
+        "a_bytes": 10,
+        "a_chars": 0,
+        "a_empty": true,
+        "b_text_ignored": "Unknown or incomplete command, see below for error\nprobe_b_500375_229620<--[HERE]\n",
+        "root_help_line": "/reload"
+      },
+      "xp": {
+        "ok": true,
+        "a_packets": [
+          {
+            "bytes": 10,
+            "chars": 0,
+            "t": 0.0
+          }
+        ],
+        "a_bytes": 10,
+        "a_chars": 0,
+        "a_empty": true,
+        "b_text_ignored": "Unknown or incomplete command, see below for error\nprobe_b_500377_919b8e<--[HERE]\n",
+        "root_help_line": "/xp -> experience"
+      }
+    },
+    "final_help": {
+      "cmd": "help",
+      "a_id": 500378,
+      "b_id": 500379,
+      "anomalies": [],
+      "t_send_a": 0.0,
+      "t_send_b": 0.001,
+      "t_recv_b": 0.042,
+      "trailing": [],
+      "ok": true,
+      "a_packets": [
+        {
+          "bytes": 4106,
+          "chars": 4096,
+          "t": 0.001
+        },
+        {
+          "bytes": 3036,
+          "chars": 3026,
+          "t": 0.001
+        }
+      ],
+      "a_packet_count": 2,
+      "a_bytes": 7142,
+      "a_chars": 7122,
+      "a_empty": false,
+      "rtt_a_ms": 1.0,
+      "rtt_b_ms": 41.08,
+      "b_text_ignored": "Unknown or incomplete command, see below for error\nprobe_b_500379_743ac3<--[HERE]\n"
+    },
+    "scan": {
+      "scanned_roots": 183,
+      "actual_requests": 370,
+      "scan_seconds": 0.02,
+      "empty_packet_roots": [
+        "xp",
+        "tell",
+        "w",
+        "reload",
+        "seed",
+        "tm",
+        "tp",
+        "save-off",
+        "save-on",
+        "stop",
+        "listwarps",
+        "back",
+        "spawn",
+        "rtp",
+        "kickme",
+        "trashcan",
+        "recording",
+        "streaming",
+        "hat",
+        "ftbultimine"
+      ],
+      "no_packet_roots": [],
+      "redirect_roots": [
+        "execute"
+      ],
+      "samples": {
+        "advancement": {
+          "ok": true,
+          "a_chars": 133,
+          "a_packet_count": 1,
+          "rtt_b_ms": -0.2,
+          "no_a_packet": false,
+          "a_empty": false,
+          "error": null,
+          "anomalies": [],
+          "body_head": "/advancement grant <targets> (only|from|until|through|everything)\n/advancement revoke <targets> (only|from|until|through|everything)\n"
+        },
+        "attribute": {
+          "ok": true,
+          "a_chars": 52,
+          "a_packet_count": 1,
+          "rtt_b_ms": -0.1,
+          "no_a_packet": false,
+          "a_empty": false,
+          "error": null,
+          "anomalies": [],
+          "body_head": "/attribute <target> <attribute> (get|base|modifier)\n"
+        },
+        "execute": {
+          "ok": true,
+          "a_chars": 425,
+          "a_packet_count": 1,
+          "rtt_b_ms": -0.09,
+          "no_a_packet": false,
+          "a_empty": false,
+          "error": null,
+          "anomalies": [],
+          "body_head": "/execute run ...\n/execute if (block|score|blocks|entity|predicate|data)\n/execute unless (block|score|blocks|entity|predicate|data)\n/execute as <targets> -> execute\n/execute at <targets> -> execute\n/execute store (result|success)\n/execute positioned (<pos>|as)\n/execute rotated (<rot>|as)\n/execute facing (entity|<pos>)\n/execute align <axes> -> execute\n/execute anchored <anchor> -> execute\n/execute i"
+        },
+        "bossbar": {
+          "ok": true,
+          "a_chars": 169,
+          "a_packet_count": 1,
+          "rtt_b_ms": -0.1,
+          "no_a_packet": false,
+          "a_empty": false,
+          "error": null,
+          "anomalies": [],
+          "body_head": "/bossbar add <id> <name>\n/bossbar remove <id>\n/bossbar list\n/bossbar set <id> (name|color|style|value|max|visible|players)\n/bossbar get <id> (value|max|visible|players)\n"
+        },
+        "clear": {
+          "ok": true,
+          "a_chars": 28,
+          "a_packet_count": 1,
+          "rtt_b_ms": -0.08,
+          "no_a_packet": false,
+          "a_empty": false,
+          "error": null,
+          "anomalies": [],
+          "body_head": "/clear [<targets>] [<item>]\n"
+        },
+        "clone": {
+          "ok": true,
+          "a_chars": 61,
+          "a_packet_count": 1,
+          "rtt_b_ms": -0.07,
+          "no_a_packet": false,
+          "a_empty": false,
+          "error": null,
+          "anomalies": [],
+          "body_head": "/clone <begin> <end> <destination> [replace|masked|filtered]\n"
+        },
+        "data": {
+          "ok": true,
+          "a_chars": 140,
+          "a_packet_count": 1,
+          "rtt_b_ms": -0.08,
+          "no_a_packet": false,
+          "a_empty": false,
+          "error": null,
+          "anomalies": [],
+          "body_head": "/data merge (entity|block|storage)\n/data get (entity|block|storage)\n/data remove (entity|block|storage)\n/data modify (entity|block|storage)\n"
+        },
+        "datapack": {
+          "ok": true,
+          "a_chars": 110,
+          "a_packet_count": 1,
+          "rtt_b_ms": -0.08,
+          "no_a_packet": false,
+          "a_empty": false,
+          "error": null,
+          "anomalies": [],
+          "body_head": "/datapack enable <name> [after|before|last|first]\n/datapack disable <name>\n/datapack list [available|enabled]\n"
+        },
+        "debug": {
+          "ok": true,
+          "a_chars": 48,
+          "a_packet_count": 1,
+          "rtt_b_ms": -0.07,
+          "no_a_packet": false,
+          "a_empty": false,
+          "error": null,
+          "anomalies": [],
+          "body_head": "/debug start\n/debug stop\n/debug function <name>\n"
+        },
+        "defaultgamemode": {
+          "ok": true,
+          "a_chars": 106,
+          "a_packet_count": 1,
+          "rtt_b_ms": -0.07,
+          "no_a_packet": false,
+          "a_empty": false,
+          "error": null,
+          "anomalies": [],
+          "body_head": "/defaultgamemode survival\n/defaultgamemode creative\n/defaultgamemode adventure\n/defaultgamemode spectator\n"
+        },
+        "difficulty": {
+          "ok": true,
+          "a_chars": 82,
+          "a_packet_count": 1,
+          "rtt_b_ms": -0.09,
+          "no_a_packet": false,
+          "a_empty": false,
+          "error": null,
+          "anomalies": [],
+          "body_head": "/difficulty [peaceful]\n/difficulty [easy]\n/difficulty [normal]\n/difficulty [hard]\n"
+        },
+        "effect": {
+          "ok": true,
+          "a_chars": 70,
+          "a_packet_count": 1,
+          "rtt_b_ms": -0.1,
+          "no_a_packet": false,
+          "a_empty": false,
+          "error": null,
+          "anomalies": [],
+          "body_head": "/effect clear [<targets>]\n/effect give <targets> <effect> [<seconds>]\n"
+        },
+        "me": {
+          "ok": true,
+          "a_chars": 13,
+          "a_packet_count": 1,
+          "rtt_b_ms": -0.05,
+          "no_a_packet": false,
+          "a_empty": false,
+          "error": null,
+          "anomalies": [],
+          "body_head": "/me <action>\n"
+        },
+        "enchant": {
+          "ok": true,
+          "a_chars": 43,
+          "a_packet_count": 1,
+          "rtt_b_ms": -0.05,
+          "no_a_packet": false,
+          "a_empty": false,
+          "error": null,
+          "anomalies": [],
+          "body_head": "/enchant <targets> <enchantment> [<level>]\n"
+        },
+        "experience": {
+          "ok": true,
+          "a_chars": 146,
+          "a_packet_count": 1,
+          "rtt_b_ms": -0.06,
+          "no_a_packet": false,
+          "a_empty": false,
+          "error": null,
+          "anomalies": [],
+          "body_head": "/experience add <targets> <amount> [points|levels]\n/experience set <targets> <amount> [points|levels]\n/experience query <targets> (points|levels)\n"
+        },
+        "xp": {
+          "ok": true,
+          "a_chars": 0,
+          "a_packet_count": 1,
+          "rtt_b_ms": -0.05,
+          "no_a_packet": false,
+          "a_empty": true,
+          "error": null,
+          "anomalies": [],
+          "body_head": ""
+        },
+        "fill": {
+          "ok": true,
+          "a_chars": 64,
+          "a_packet_count": 1,
+          "rtt_b_ms": -0.05,
+          "no_a_packet": false,
+          "a_empty": false,
+          "error": null,
+          "anomalies": [],
+          "body_head": "/fill <from> <to> <block> [replace|keep|outline|hollow|destroy]\n"
+        },
+        "forceload": {
+          "ok": true,
+          "a_chars": 85,
+          "a_packet_count": 1,
+          "rtt_b_ms": -0.06,
+          "no_a_packet": false,
+          "a_empty": false,
+          "error": null,
+          "anomalies": [],
+          "body_head": "/forceload add <from> [<to>]\n/forceload remove (<from>|all)\n/forceload query [<pos>]\n"
+        },
+        "function": {
+          "ok": true,
+          "a_chars": 17,
+          "a_packet_count": 1,
+          "rtt_b_ms": -0.05,
+          "no_a_packet": false,
+          "a_empty": false,
+          "error": null,
+          "anomalies": [],
+          "body_head": "/function <name>\n"
+        },
+        "gamemode": {
+          "ok": true,
+          "a_chars": 122,
+          "a_packet_count": 1,
+          "rtt_b_ms": -0.05,
+          "no_a_packet": false,
+          "a_empty": false,
+          "error": null,
+          "anomalies": [],
+          "body_head": "/gamemode survival [<target>]\n/gamemode creative [<target>]\n/gamemode adventure [<target>]\n/gamemode spectator [<target>]\n"
+        },
+        "gamerule": {
+          "ok": true,
+          "a_chars": 1461,
+          "a_packet_count": 1,
+          "rtt_b_ms": -0.1,
+          "no_a_packet": false,
+          "a_empty": false,
+          "error": null,
+          "anomalies": [],
+          "body_head": "/gamerule announceAdvancements [<value>]\n/gamerule coinDropPercent [<value>]\n/gamerule commandBlockOutput [<value>]\n/gamerule disableElytraMovementCheck [<value>]\n/gamerule disableRaids [<value>]\n/gamerule doBetterServerSleep [<value>]\n/gamerule doDaylightCycle [<value>]\n/gamerule doEntityDrops [<value>]\n/gamerule doFireTick [<value>]\n/gamerule doImmediateRespawn [<value>]\n/gamerule doInsomnia [<v"
+        },
+        "give": {
+          "ok": true,
+          "a_chars": 33,
+          "a_packet_count": 1,
+          "rtt_b_ms": -0.05,
+          "no_a_packet": false,
+          "a_empty": false,
+          "error": null,
+          "anomalies": [],
+          "body_head": "/give <targets> <item> [<count>]\n"
+        },
+        "help": {
+          "ok": true,
+          "a_chars": 18,
+          "a_packet_count": 1,
+          "rtt_b_ms": -0.05,
+          "no_a_packet": false,
+          "a_empty": false,
+          "error": null,
+          "anomalies": [],
+          "body_head": "/help [<command>]\n"
+        },
+        "item": {
+          "ok": true,
+          "a_chars": 57,
+          "a_packet_count": 1,
+          "rtt_b_ms": -0.05,
+          "no_a_packet": false,
+          "a_empty": false,
+          "error": null,
+          "anomalies": [],
+          "body_head": "/item replace (block|entity)\n/item modify (block|entity)\n"
+        },
+        "kick": {
+          "ok": true,
+          "a_chars": 27,
+          "a_packet_count": 1,
+          "rtt_b_ms": -0.05,
+          "no_a_packet": false,
+          "a_empty": false,
+          "error": null,
+          "anomalies": [],
+          "body_head": "/kick <targets> [<reason>]\n"
+        },
+        "kill": {
+          "ok": true,
+          "a_chars": 18,
+          "a_packet_count": 1,
+          "rtt_b_ms": -0.05,
+          "no_a_packet": false,
+          "a_empty": false,
+          "error": null,
+          "anomalies": [],
+          "body_head": "/kill [<targets>]\n"
+        },
+        "list": {
+          "ok": true,
+          "a_chars": 14,
+          "a_packet_count": 1,
+          "rtt_b_ms": -0.05,
+          "no_a_packet": false,
+          "a_empty": false,
+          "error": null,
+          "anomalies": [],
+          "body_head": "/list [uuids]\n"
+        },
+        "locate": {
+          "ok": true,
+          "a_chars": 70,
+          "a_packet_count": 1,
+          "rtt_b_ms": -0.05,
+          "no_a_packet": false,
+          "a_empty": false,
+          "error": null,
+          "anomalies": [],
+          "body_head": "/locate structure <structure>\n/locate biome <biome>\n/locate poi <poi>\n"
+        },
+        "loot": {
+          "ok": true,
+          "a_chars": 165,
+          "a_packet_count": 1,
+          "rtt_b_ms": -0.07,
+          "no_a_packet": false,
+          "a_empty": false,
+          "error": null,
+          "anomalies": [],
+          "body_head": "/loot replace (entity|block)\n/loot insert <targetPos> (fish|loot|kill|mine)\n/loot give <players> (fish|loot|kill|mine)\n/loot spawn <targetPos> (fish|loot|kill|mine)\n"
+        },
+        "msg": {
+          "ok": true,
+          "a_chars": 25,
+          "a_packet_count": 1,
+          "rtt_b_ms": -0.05,
+          "no_a_packet": false,
+          "a_empty": false,
+          "error": null,
+          "anomalies": [],
+          "body_head": "/msg <targets> <message>\n"
+        },
+        "tell": {
+          "ok": true,
+          "a_chars": 0,
+          "a_packet_count": 1,
+          "rtt_b_ms": -0.05,
+          "no_a_packet": false,
+          "a_empty": true,
+          "error": null,
+          "anomalies": [],
+          "body_head": ""
+        },
+        "w": {
+          "ok": true,
+          "a_chars": 0,
+          "a_packet_count": 1,
+          "rtt_b_ms": -0.05,
+          "no_a_packet": false,
+          "a_empty": true,
+          "error": null,
+          "anomalies": [],
+          "body_head": ""
+        },
+        "particle": {
+          "ok": true,
+          "a_chars": 25,
+          "a_packet_count": 1,
+          "rtt_b_ms": -0.05,
+          "no_a_packet": false,
+          "a_empty": false,
+          "error": null,
+          "anomalies": [],
+          "body_head": "/particle <name> [<pos>]\n"
+        },
+        "place": {
+          "ok": true,
+          "a_chars": 160,
+          "a_packet_count": 1,
+          "rtt_b_ms": -0.06,
+          "no_a_packet": false,
+          "a_empty": false,
+          "error": null,
+          "anomalies": [],
+          "body_head": "/place feature <feature> [<pos>]\n/place jigsaw <pool> <target> <max_depth> [<position>]\n/place structure <structure> [<pos>]\n/place template <template> [<pos>]\n"
+        },
+        "playsound": {
+          "ok": true,
+          "a_chars": 92,
+          "a_packet_count": 1,
+          "rtt_b_ms": -0.05,
+          "no_a_packet": false,
+          "a_empty": false,
+          "error": null,
+          "anomalies": [],
+          "body_head": "/playsound <sound> (master|music|record|weather|block|hostile|neutral|player|ambient|voice)\n"
+        },
+        "reload": {
+          "ok": true,
+          "a_chars": 0,
+          "a_packet_count": 1,
+          "rtt_b_ms": -0.05,
+          "no_a_packet": false,
+          "a_empty": true,
+          "error": null,
+          "anomalies": [],
+          "body_head": ""
+        },
+        "recipe": {
+          "ok": true,
+          "a_chars": 72,
+          "a_packet_count": 1,
+          "rtt_b_ms": -0.05,
+          "no_a_packet": false,
+          "a_empty": false,
+          "error": null,
+          "anomalies": [],
+          "body_head": "/recipe give <targets> (<recipe>|*)\n/recipe take <targets> (<recipe>|*)\n"
+        },
+        "say": {
+          "ok": true,
+          "a_chars": 15,
+          "a_packet_count": 1,
+          "rtt_b_ms": -0.05,
+          "no_a_packet": false,
+          "a_empty": false,
+          "error": null,
+          "anomalies": [],
+          "body_head": "/say <message>\n"
+        },
+        "schedule": {
+          "ok": true,
+          "a_chars": 81,
+          "a_packet_count": 1,
+          "rtt_b_ms": -0.05,
+          "no_a_packet": false,
+          "a_empty": false,
+          "error": null,
+          "anomalies": [],
+          "body_head": "/schedule function <function> <time> [append|replace]\n/schedule clear <function>\n"
+        },
+        "scoreboard": {
+          "ok": true,
+          "a_chars": 128,
+          "a_packet_count": 1,
+          "rtt_b_ms": -0.06,
+          "no_a_packet": false,
+          "a_empty": false,
+          "error": null,
+          "anomalies": [],
+          "body_head": "/scoreboard objectives (list|add|modify|remove|setdisplay)\n/scoreboard players (list|set|get|add|remove|reset|enable|operation)\n"
+        },
+        "seed": {
+          "ok": true,
+          "a_chars": 0,
+          "a_packet_count": 1,
+          "rtt_b_ms": -0.05,
+          "no_a_packet": false,
+          "a_empty": true,
+          "error": null,
+          "anomalies": [],
+          "body_head": ""
+        },
+        "setblock": {
+          "ok": true,
+          "a_chars": 47,
+          "a_packet_count": 1,
+          "rtt_b_ms": -0.05,
+          "no_a_packet": false,
+          "a_empty": false,
+          "error": null,
+          "anomalies": [],
+          "body_head": "/setblock <pos> <block> [destroy|keep|replace]\n"
+        },
+        "spawnpoint": {
+          "ok": true,
+          "a_chars": 32,
+          "a_packet_count": 1,
+          "rtt_b_ms": -0.05,
+          "no_a_packet": false,
+          "a_empty": false,
+          "error": null,
+          "anomalies": [],
+          "body_head": "/spawnpoint [<targets>] [<pos>]\n"
+        },
+        "setworldspawn": {
+          "ok": true,
+          "a_chars": 33,
+          "a_packet_count": 1,
+          "rtt_b_ms": -0.05,
+          "no_a_packet": false,
+          "a_empty": false,
+          "error": null,
+          "anomalies": [],
+          "body_head": "/setworldspawn [<pos>] [<angle>]\n"
+        },
+        "spectate": {
+          "ok": true,
+          "a_chars": 32,
+          "a_packet_count": 1,
+          "rtt_b_ms": -0.05,
+          "no_a_packet": false,
+          "a_empty": false,
+          "error": null,
+          "anomalies": [],
+          "body_head": "/spectate [<target>] [<player>]\n"
+        },
+        "spreadplayers": {
+          "ok": true,
+          "a_chars": 75,
+          "a_packet_count": 1,
+          "rtt_b_ms": -0.05,
+          "no_a_packet": false,
+          "a_empty": false,
+          "error": null,
+          "anomalies": [],
+          "body_head": "/spreadplayers <center> <spreadDistance> <maxRange> (<respectTeams>|under)\n"
+        },
+        "stopsound": {
+          "ok": true,
+          "a_chars": 96,
+          "a_packet_count": 1,
+          "rtt_b_ms": -0.05,
+          "no_a_packet": false,
+          "a_empty": false,
+          "error": null,
+          "anomalies": [],
+          "body_head": "/stopsound <targets> [*|master|music|record|weather|block|hostile|neutral|player|ambient|voice]\n"
+        },
+        "summon": {
+          "ok": true,
+          "a_chars": 25,
+          "a_packet_count": 1,
+          "rtt_b_ms": -0.05,
+          "no_a_packet": false,
+          "a_empty": false,
+          "error": null,
+          "anomalies": [],
+          "body_head": "/summon <entity> [<pos>]\n"
+        },
+        "tag": {
+          "ok": true,
+          "a_chars": 33,
+          "a_packet_count": 1,
+          "rtt_b_ms": -0.05,
+          "no_a_packet": false,
+          "a_empty": false,
+          "error": null,
+          "anomalies": [],
+          "body_head": "/tag <targets> (add|remove|list)\n"
+        },
+        "team": {
+          "ok": true,
+          "a_chars": 288,
+          "a_packet_count": 1,
+          "rtt_b_ms": -0.06,
+          "no_a_packet": false,
+          "a_empty": false,
+          "error": null,
+          "anomalies": [],
+          "body_head": "/team list [<team>]\n/team add <team> [<displayName>]\n/team remove <team>\n/team empty <team>\n/team join <team> [<members>]\n/team leave <members>\n/team modify <team> (displayName|color|friendlyFire|seeFriendlyInvisibles|nametagVisibility|deathMessageVisibility|collisionRule|prefix|suffix)\n"
+        },
+        "teammsg": {
+          "ok": true,
+          "a_chars": 19,
+          "a_packet_count": 1,
+          "rtt_b_ms": -0.05,
+          "no_a_packet": false,
+          "a_empty": false,
+          "error": null,
+          "anomalies": [],
+          "body_head": "/teammsg <message>\n"
+        },
+        "tm": {
+          "ok": true,
+          "a_chars": 0,
+          "a_packet_count": 1,
+          "rtt_b_ms": -0.05,
+          "no_a_packet": false,
+          "a_empty": true,
+          "error": null,
+          "anomalies": [],
+          "body_head": ""
+        },
+        "teleport": {
+          "ok": true,
+          "a_chars": 92,
+          "a_packet_count": 1,
+          "rtt_b_ms": -0.05,
+          "no_a_packet": false,
+          "a_empty": false,
+          "error": null,
+          "anomalies": [],
+          "body_head": "/teleport <location>\n/teleport <destination>\n/teleport <targets> (<location>|<destination>)\n"
+        },
+        "tp": {
+          "ok": true,
+          "a_chars": 0,
+          "a_packet_count": 1,
+          "rtt_b_ms": -0.05,
+          "no_a_packet": false,
+          "a_empty": true,
+          "error": null,
+          "anomalies": [],
+          "body_head": ""
+        },
+        "tellraw": {
+          "ok": true,
+          "a_chars": 29,
+          "a_packet_count": 1,
+          "rtt_b_ms": -0.05,
+          "no_a_packet": false,
+          "a_empty": false,
+          "error": null,
+          "anomalies": [],
+          "body_head": "/tellraw <targets> <message>\n"
+        },
+        "time": {
+          "ok": true,
+          "a_chars": 95,
+          "a_packet_count": 1,
+          "rtt_b_ms": -0.06,
+          "no_a_packet": false,
+          "a_empty": false,
+          "error": null,
+          "anomalies": [],
+          "body_head": "/time set (day|noon|night|midnight|<time>)\n/time add <time>\n/time query (daytime|gametime|day)\n"
+        },
+        "title": {
+          "ok": true,
+          "a_chars": 62,
+          "a_packet_count": 1,
+          "rtt_b_ms": -0.06,
+          "no_a_packet": false,
+          "a_empty": false,
+          "error": null,
+          "anomalies": [],
+          "body_head": "/title <targets> (clear|reset|title|subtitle|actionbar|times)\n"
+        },
+        "trigger": {
+          "ok": true,
+          "a_chars": 31,
+          "a_packet_count": 1,
+          "rtt_b_ms": -0.05,
+          "no_a_packet": false,
+          "a_empty": false,
+          "error": null,
+          "anomalies": [],
+          "body_head": "/trigger <objective> [add|set]\n"
+        },
+        "weather": {
+          "ok": true,
+          "a_chars": 85,
+          "a_packet_count": 1,
+          "rtt_b_ms": -0.05,
+          "no_a_packet": false,
+          "a_empty": false,
+          "error": null,
+          "anomalies": [],
+          "body_head": "/weather clear [<duration>]\n/weather rain [<duration>]\n/weather thunder [<duration>]\n"
+        },
+        "worldborder": {
+          "ok": true,
+          "a_chars": 190,
+          "a_packet_count": 1,
+          "rtt_b_ms": -0.06,
+          "no_a_packet": false,
+          "a_empty": false,
+          "error": null,
+          "anomalies": [],
+          "body_head": "/worldborder add <distance> [<time>]\n/worldborder set <distance> [<time>]\n/worldborder center <pos>\n/worldborder damage (amount|buffer)\n/worldborder get\n/worldborder warning (distance|time)\n"
+        },
+        "jfr": {
+          "ok": true,
+          "a_chars": 21,
+          "a_packet_count": 1,
+          "rtt_b_ms": -0.05,
+          "no_a_packet": false,
+          "a_empty": false,
+          "error": null,
+          "anomalies": [],
+          "body_head": "/jfr start\n/jfr stop\n"
+        },
+        "ban-ip": {
+          "ok": true,
+          "a_chars": 28,
+          "a_packet_count": 1,
+          "rtt_b_ms": -0.05,
+          "no_a_packet": false,
+          "a_empty": false,
+          "error": null,
+          "anomalies": [],
+          "body_head": "/ban-ip <target> [<reason>]\n"
+        },
+        "banlist": {
+          "ok": true,
+          "a_chars": 34,
+          "a_packet_count": 1,
+          "rtt_b_ms": -0.05,
+          "no_a_packet": false,
+          "a_empty": false,
+          "error": null,
+          "anomalies": [],
+          "body_head": "/banlist [ips]\n/banlist [players]\n"
+        },
+        "ban": {
+          "ok": true,
+          "a_chars": 26,
+          "a_packet_count": 1,
+          "rtt_b_ms": -0.05,
+          "no_a_packet": false,
+          "a_empty": false,
+          "error": null,
+          "anomalies": [],
+          "body_head": "/ban <targets> [<reason>]\n"
+        },
+        "deop": {
+          "ok": true,
+          "a_chars": 16,
+          "a_packet_count": 1,
+          "rtt_b_ms": -0.05,
+          "no_a_packet": false,
+          "a_empty": false,
+          "error": null,
+          "anomalies": [],
+          "body_head": "/deop <targets>\n"
+        },
+        "op": {
+          "ok": true,
+          "a_chars": 14,
+          "a_packet_count": 1,
+          "rtt_b_ms": 0.95,
+          "no_a_packet": false,
+          "a_empty": false,
+          "error": null,
+          "anomalies": [],
+          "body_head": "/op <targets>\n"
+        },
+        "pardon": {
+          "ok": true,
+          "a_chars": 18,
+          "a_packet_count": 1,
+          "rtt_b_ms": -0.07,
+          "no_a_packet": false,
+          "a_empty": false,
+          "error": null,
+          "anomalies": [],
+          "body_head": "/pardon <targets>\n"
+        },
+        "pardon-ip": {
+          "ok": true,
+          "a_chars": 20,
+          "a_packet_count": 1,
+          "rtt_b_ms": -0.05,
+          "no_a_packet": false,
+          "a_empty": false,
+          "error": null,
+          "anomalies": [],
+          "body_head": "/pardon-ip <target>\n"
+        },
+        "perf": {
+          "ok": true,
+          "a_chars": 23,
+          "a_packet_count": 1,
+          "rtt_b_ms": -0.05,
+          "no_a_packet": false,
+          "a_empty": false,
+          "error": null,
+          "anomalies": [],
+          "body_head": "/perf start\n/perf stop\n"
+        },
+        "save-all": {
+          "ok": true,
+          "a_chars": 18,
+          "a_packet_count": 1,
+          "rtt_b_ms": -0.05,
+          "no_a_packet": false,
+          "a_empty": false,
+          "error": null,
+          "anomalies": [],
+          "body_head": "/save-all [flush]\n"
+        },
+        "save-off": {
+          "ok": true,
+          "a_chars": 0,
+          "a_packet_count": 1,
+          "rtt_b_ms": -0.05,
+          "no_a_packet": false,
+          "a_empty": true,
+          "error": null,
+          "anomalies": [],
+          "body_head": ""
+        },
+        "save-on": {
+          "ok": true,
+          "a_chars": 0,
+          "a_packet_count": 1,
+          "rtt_b_ms": -0.05,
+          "no_a_packet": false,
+          "a_empty": true,
+          "error": null,
+          "anomalies": [],
+          "body_head": ""
+        },
+        "setidletimeout": {
+          "ok": true,
+          "a_chars": 26,
+          "a_packet_count": 1,
+          "rtt_b_ms": -0.05,
+          "no_a_packet": false,
+          "a_empty": false,
+          "error": null,
+          "anomalies": [],
+          "body_head": "/setidletimeout <minutes>\n"
+        },
+        "stop": {
+          "ok": true,
+          "a_chars": 0,
+          "a_packet_count": 1,
+          "rtt_b_ms": -0.05,
+          "no_a_packet": false,
+          "a_empty": true,
+          "error": null,
+          "anomalies": [],
+          "body_head": ""
+        },
+        "whitelist": {
+          "ok": true,
+          "a_chars": 116,
+          "a_packet_count": 1,
+          "rtt_b_ms": -0.06,
+          "no_a_packet": false,
+          "a_empty": false,
+          "error": null,
+          "anomalies": [],
+          "body_head": "/whitelist on\n/whitelist off\n/whitelist list\n/whitelist add <targets>\n/whitelist remove <targets>\n/whitelist reload\n"
+        },
+        "home": {
+          "ok": true,
+          "a_chars": 15,
+          "a_packet_count": 1,
+          "rtt_b_ms": -0.05,
+          "no_a_packet": false,
+          "a_empty": false,
+          "error": null,
+          "anomalies": [],
+          "body_head": "/home [<name>]\n"
+        },
+        "sethome": {
+          "ok": true,
+          "a_chars": 18,
+          "a_packet_count": 1,
+          "rtt_b_ms": -0.05,
+          "no_a_packet": false,
+          "a_empty": false,
+          "error": null,
+          "anomalies": [],
+          "body_head": "/sethome [<name>]\n"
+        },
+        "delhome": {
+          "ok": true,
+          "a_chars": 18,
+          "a_packet_count": 1,
+          "rtt_b_ms": -0.05,
+          "no_a_packet": false,
+          "a_empty": false,
+          "error": null,
+          "anomalies": [],
+          "body_head": "/delhome [<name>]\n"
+        },
+        "listhomes": {
+          "ok": true,
+          "a_chars": 22,
+          "a_packet_count": 1,
+          "rtt_b_ms": -0.05,
+          "no_a_packet": false,
+          "a_empty": false,
+          "error": null,
+          "anomalies": [],
+          "body_head": "/listhomes [<player>]\n"
+        },
+        "warp": {
+          "ok": true,
+          "a_chars": 13,
+          "a_packet_count": 1,
+          "rtt_b_ms": -0.05,
+          "no_a_packet": false,
+          "a_empty": false,
+          "error": null,
+          "anomalies": [],
+          "body_head": "/warp <name>\n"
+        },
+        "setwarp": {
+          "ok": true,
+          "a_chars": 16,
+          "a_packet_count": 1,
+          "rtt_b_ms": -0.05,
+          "no_a_packet": false,
+          "a_empty": false,
+          "error": null,
+          "anomalies": [],
+          "body_head": "/setwarp <name>\n"
+        },
+        "delwarp": {
+          "ok": true,
+          "a_chars": 16,
+          "a_packet_count": 1,
+          "rtt_b_ms": -0.05,
+          "no_a_packet": false,
+          "a_empty": false,
+          "error": null,
+          "anomalies": [],
+          "body_head": "/delwarp <name>\n"
+        },
+        "listwarps": {
+          "ok": true,
+          "a_chars": 0,
+          "a_packet_count": 1,
+          "rtt_b_ms": -0.05,
+          "no_a_packet": false,
+          "a_empty": true,
+          "error": null,
+          "anomalies": [],
+          "body_head": ""
+        },
+        "back": {
+          "ok": true,
+          "a_chars": 0,
+          "a_packet_count": 1,
+          "rtt_b_ms": -0.05,
+          "no_a_packet": false,
+          "a_empty": true,
+          "error": null,
+          "anomalies": [],
+          "body_head": ""
+        },
+        "spawn": {
+          "ok": true,
+          "a_chars": 0,
+          "a_packet_count": 1,
+          "rtt_b_ms": -0.05,
+          "no_a_packet": false,
+          "a_empty": true,
+          "error": null,
+          "anomalies": [],
+          "body_head": ""
+        },
+        "rtp": {
+          "ok": true,
+          "a_chars": 0,
+          "a_packet_count": 1,
+          "rtt_b_ms": -0.06,
+          "no_a_packet": false,
+          "a_empty": true,
+          "error": null,
+          "anomalies": [],
+          "body_head": ""
+        },
+        "teleport_last": {
+          "ok": true,
+          "a_chars": 24,
+          "a_packet_count": 1,
+          "rtt_b_ms": -0.05,
+          "no_a_packet": false,
+          "a_empty": false,
+          "error": null,
+          "anomalies": [],
+          "body_head": "/teleport_last <player>\n"
+        },
+        "tpx": {
+          "ok": true,
+          "a_chars": 17,
+          "a_packet_count": 1,
+          "rtt_b_ms": -0.05,
+          "no_a_packet": false,
+          "a_empty": false,
+          "error": null,
+          "anomalies": [],
+          "body_head": "/tpx <dimension>\n"
+        },
+        "tpa": {
+          "ok": true,
+          "a_chars": 14,
+          "a_packet_count": 1,
+          "rtt_b_ms": -0.05,
+          "no_a_packet": false,
+          "a_empty": false,
+          "error": null,
+          "anomalies": [],
+          "body_head": "/tpa <target>\n"
+        },
+        "tpahere": {
+          "ok": true,
+          "a_chars": 18,
+          "a_packet_count": 1,
+          "rtt_b_ms": -0.05,
+          "no_a_packet": false,
+          "a_empty": false,
+          "error": null,
+          "anomalies": [],
+          "body_head": "/tpahere <target>\n"
+        },
+        "tpaccept": {
+          "ok": true,
+          "a_chars": 15,
+          "a_packet_count": 1,
+          "rtt_b_ms": -0.05,
+          "no_a_packet": false,
+          "a_empty": false,
+          "error": null,
+          "anomalies": [],
+          "body_head": "/tpaccept <id>\n"
+        },
+        "tpdeny": {
+          "ok": true,
+          "a_chars": 13,
+          "a_packet_count": 1,
+          "rtt_b_ms": -0.05,
+          "no_a_packet": false,
+          "a_empty": false,
+          "error": null,
+          "anomalies": [],
+          "body_head": "/tpdeny <id>\n"
+        },
+        "heal": {
+          "ok": true,
+          "a_chars": 17,
+          "a_packet_count": 1,
+          "rtt_b_ms": -0.05,
+          "no_a_packet": false,
+          "a_empty": false,
+          "error": null,
+          "anomalies": [],
+          "body_head": "/heal [<player>]\n"
+        },
+        "fly": {
+          "ok": true,
+          "a_chars": 16,
+          "a_packet_count": 1,
+          "rtt_b_ms": -0.05,
+          "no_a_packet": false,
+          "a_empty": false,
+          "error": null,
+          "anomalies": [],
+          "body_head": "/fly [<player>]\n"
+        },
+        "god": {
+          "ok": true,
+          "a_chars": 16,
+          "a_packet_count": 1,
+          "rtt_b_ms": -0.05,
+          "no_a_packet": false,
+          "a_empty": false,
+          "error": null,
+          "anomalies": [],
+          "body_head": "/god [<player>]\n"
+        },
+        "invsee": {
+          "ok": true,
+          "a_chars": 17,
+          "a_packet_count": 1,
+          "rtt_b_ms": -0.06,
+          "no_a_packet": false,
+          "a_empty": false,
+          "error": null,
+          "anomalies": [],
+          "body_head": "/invsee <player>\n"
+        },
+        "nicknamefor": {
+          "ok": true,
+          "a_chars": 35,
+          "a_packet_count": 1,
+          "rtt_b_ms": -0.05,
+          "no_a_packet": false,
+          "a_empty": false,
+          "error": null,
+          "anomalies": [],
+          "body_head": "/nicknamefor <player> [<nickname>]\n"
+        },
+        "mute": {
+          "ok": true,
+          "a_chars": 25,
+          "a_packet_count": 1,
+          "rtt_b_ms": -0.05,
+          "no_a_packet": false,
+          "a_empty": false,
+          "error": null,
+          "anomalies": [],
+          "body_head": "/mute <player> [<until>]\n"
+        },
+        "unmute": {
+          "ok": true,
+          "a_chars": 17,
+          "a_packet_count": 1,
+          "rtt_b_ms": -0.05,
+          "no_a_packet": false,
+          "a_empty": false,
+          "error": null,
+          "anomalies": [],
+          "body_head": "/unmute <player>\n"
+        },
+        "kickme": {
+          "ok": true,
+          "a_chars": 0,
+          "a_packet_count": 1,
+          "rtt_b_ms": -0.05,
+          "no_a_packet": false,
+          "a_empty": true,
+          "error": null,
+          "anomalies": [],
+          "body_head": ""
+        },
+        "trashcan": {
+          "ok": true,
+          "a_chars": 0,
+          "a_packet_count": 1,
+          "rtt_b_ms": -0.05,
+          "no_a_packet": false,
+          "a_empty": true,
+          "error": null,
+          "anomalies": [],
+          "body_head": ""
+        },
+        "enderchest": {
+          "ok": true,
+          "a_chars": 23,
+          "a_packet_count": 1,
+          "rtt_b_ms": -0.05,
+          "no_a_packet": false,
+          "a_empty": false,
+          "error": null,
+          "anomalies": [],
+          "body_head": "/enderchest [<player>]\n"
+        },
+        "leaderboard": {
+          "ok": true,
+          "a_chars": 227,
+          "a_packet_count": 1,
+          "rtt_b_ms": -0.06,
+          "no_a_packet": false,
+          "a_empty": false,
+          "error": null,
+          "anomalies": [],
+          "body_head": "/leaderboard deaths\n/leaderboard time_played\n/leaderboard deaths_per_hour\n/leaderboard player_kills\n/leaderboard mob_kills\n/leaderboard damage_dealt\n/leaderboard jumps\n/leaderboard distance_walked\n/leaderboard time_since_death\n"
+        },
+        "recording": {
+          "ok": true,
+          "a_chars": 0,
+          "a_packet_count": 1,
+          "rtt_b_ms": -0.05,
+          "no_a_packet": false,
+          "a_empty": true,
+          "error": null,
+          "anomalies": [],
+          "body_head": ""
+        },
+        "streaming": {
+          "ok": true,
+          "a_chars": 0,
+          "a_packet_count": 1,
+          "rtt_b_ms": -0.06,
+          "no_a_packet": false,
+          "a_empty": true,
+          "error": null,
+          "anomalies": [],
+          "body_head": ""
+        },
+        "hat": {
+          "ok": true,
+          "a_chars": 0,
+          "a_packet_count": 1,
+          "rtt_b_ms": -0.05,
+          "no_a_packet": false,
+          "a_empty": true,
+          "error": null,
+          "anomalies": [],
+          "body_head": ""
+        },
+        "nickname": {
+          "ok": true,
+          "a_chars": 23,
+          "a_packet_count": 1,
+          "rtt_b_ms": -0.05,
+          "no_a_packet": false,
+          "a_empty": false,
+          "error": null,
+          "anomalies": [],
+          "body_head": "/nickname [<nickname>]\n"
+        },
+        "ftblibrary": {
+          "ok": true,
+          "a_chars": 152,
+          "a_packet_count": 1,
+          "rtt_b_ms": -0.06,
+          "no_a_packet": false,
+          "a_empty": false,
+          "error": null,
+          "anomalies": [],
+          "body_head": "/ftblibrary gamemode\n/ftblibrary rain\n/ftblibrary day\n/ftblibrary night\n/ftblibrary nbtedit (block|entity|player|item)\n/ftblibrary generate_loot_tables\n"
+        },
+        "ftbultimine": {
+          "ok": true,
+          "a_chars": 0,
+          "a_packet_count": 1,
+          "rtt_b_ms": -0.05,
+          "no_a_packet": false,
+          "a_empty": true,
+          "error": null,
+          "anomalies": [],
+          "body_head": ""
+        },
+        "ftbteams": {
+          "ok": true,
+          "a_chars": 228,
+          "a_packet_count": 1,
+          "rtt_b_ms": -0.08,
+          "no_a_packet": false,
+          "a_empty": false,
+          "error": null,
+          "anomalies": [],
+          "body_head": "/ftbteams party (transfer_ownership_for|settings_for)\n/ftbteams server (create|delete|settings)\n/ftbteams msg <text>\n/ftbteams info [server_id|<team>]\n/ftbteams list [parties|server_teams|players]\n/ftbteams force-disband <team>\n"
+        },
+        "sdmshop": {
+          "ok": true,
+          "a_chars": 189,
+          "a_packet_count": 1,
+          "rtt_b_ms": -0.09,
+          "no_a_packet": false,
+          "a_empty": false,
+          "error": null,
+          "anomalies": [],
+          "body_head": "/sdmshop balance [<player>]\n/sdmshop pay <player> <money>\n/sdmshop set <player> <money>\n/sdmshop add <player> <money>\n/sdmshop edit_mode\n/sdmshop reloadConfig\n/sdmshop open_shop [<player>]\n"
+        },
+        "observable": {
+          "ok": true,
+          "a_chars": 204,
+          "a_packet_count": 1,
+          "rtt_b_ms": -0.06,
+          "no_a_packet": false,
+          "a_empty": false,
+          "error": null,
+          "anomalies": [],
+          "body_head": "/observable [run] <duration>\n/observable [allow] <player>\n/observable [deny] <player>\n/observable [set] (traceInterval|deviation|notifyInterval|allPlayersAllowed)\n/observable [tp] <dim> (entity|position)\n"
+        },
+        "backup": {
+          "ok": true,
+          "a_chars": 27,
+          "a_packet_count": 1,
+          "rtt_b_ms": -0.05,
+          "no_a_packet": false,
+          "a_empty": false,
+          "error": null,
+          "anomalies": [],
+          "body_head": "/backup <command> [<name>]\n"
+        },
+        "ftbchunks": {
+          "ok": true,
+          "a_chars": 447,
+          "a_packet_count": 1,
+          "rtt_b_ms": -0.07,
+          "no_a_packet": false,
+          "a_empty": false,
+          "error": null,
+          "anomalies": [],
+          "body_head": "/ftbchunks claim [<radius_in_blocks>]\n/ftbchunks unclaim [<radius_in_blocks>]\n/ftbchunks load [<radius_in_blocks>]\n/ftbchunks unload [<radius_in_blocks>]\n/ftbchunks unclaim_all [<team>]\n/ftbchunks unload_all [<team>]\n/ftbchunks info [<x>]\n/ftbchunks admin (bypass_protection|extra_claim_chunks|extra_force_load_chunks|claim_as|unclaim_as|unclaim_everything|unload_everything|view_loaded_chunks)\n/ftbc"
+        },
+        "chunks": {
+          "ok": true,
+          "a_chars": 0,
+          "a_packet_count": 1,
+          "rtt_b_ms": -0.05,
+          "no_a_packet": false,
+          "a_empty": true,
+          "error": null,
+          "anomalies": [],
+          "body_head": ""
+        },
+        "ftbquests": {
+          "ok": true,
+          "a_chars": 422,
+          "a_packet_count": 1,
+          "rtt_b_ms": -0.07,
+          "no_a_packet": false,
+          "a_empty": false,
+          "error": null,
+          "anomalies": [],
+          "body_head": "/ftbquests editing_mode [<enabled>]\n/ftbquests locked [<enabled>]\n/ftbquests delete_empty_reward_tables\n/ftbquests change_progress <players> (reset|complete)\n/ftbquests export_reward_table_to_chest <reward_table> [<pos>]\n/ftbquests import_reward_table_from_chest <name> [<pos>]\n/ftbquests generate_chapter_with_all_items_in_game\n/ftbquests reload\n/ftbquests block_rewards [<enabled>]\n/ftbquests open_"
+        },
+        "custommachinery": {
+          "ok": true,
+          "a_chars": 45,
+          "a_packet_count": 1,
+          "rtt_b_ms": -0.05,
+          "no_a_packet": false,
+          "a_empty": false,
+          "error": null,
+          "anomalies": [],
+          "body_head": "/custommachinery log\n/custommachinery reload\n"
+        },
+        "cm": {
+          "ok": true,
+          "a_chars": 19,
+          "a_packet_count": 1,
+          "rtt_b_ms": -0.05,
+          "no_a_packet": false,
+          "a_empty": false,
+          "error": null,
+          "anomalies": [],
+          "body_head": "/cm log\n/cm reload\n"
+        },
+        "kubejs": {
+          "ok": true,
+          "a_chars": 507,
+          "a_packet_count": 1,
+          "rtt_b_ms": -0.09,
+          "no_a_packet": false,
+          "a_empty": false,
+          "error": null,
+          "anomalies": [],
+          "body_head": "/kubejs help\n/kubejs custom_command <id>\n/kubejs hand\n/kubejs offhand\n/kubejs inventory\n/kubejs hotbar\n/kubejs errors\n/kubejs warnings\n/kubejs reload (config|startup_scripts|server_scripts|client_scripts|textures|lang)\n/kubejs export [pack_zips|pack_folders]\n/kubejs list_tag <registry> [<tag>]\n/kubejs dump_registry <registry>\n/kubejs stages (add|remove|clear|list)\n/kubejs painter <player> <object>"
+        },
+        "kjs": {
+          "ok": true,
+          "a_chars": 0,
+          "a_packet_count": 1,
+          "rtt_b_ms": -0.05,
+          "no_a_packet": false,
+          "a_empty": true,
+          "error": null,
+          "anomalies": [],
+          "body_head": ""
+        },
+        "researchdump": {
+          "ok": true,
+          "a_chars": 0,
+          "a_packet_count": 1,
+          "rtt_b_ms": -0.1,
+          "no_a_packet": false,
+          "a_empty": true,
+          "error": null,
+          "anomalies": [],
+          "body_head": ""
+        },
+        "modernfix": {
+          "ok": true,
+          "a_chars": 29,
+          "a_packet_count": 1,
+          "rtt_b_ms": -0.06,
+          "no_a_packet": false,
+          "a_empty": false,
+          "error": null,
+          "anomalies": [],
+          "body_head": "/modernfix upgradeStructures\n"
+        },
+        "mfsrc": {
+          "ok": true,
+          "a_chars": 0,
+          "a_packet_count": 1,
+          "rtt_b_ms": -0.05,
+          "no_a_packet": false,
+          "a_empty": true,
+          "error": null,
+          "anomalies": [],
+          "body_head": ""
+        },
+        "krypton": {
+          "ok": true,
+          "a_chars": 95,
+          "a_packet_count": 1,
+          "rtt_b_ms": -0.06,
+          "no_a_packet": false,
+          "a_empty": false,
+          "error": null,
+          "anomalies": [],
+          "body_head": "/krypton stats (show|reset)\n/krypton packets (bycount|bybytes)\n/krypton mods (bycount|bybytes)\n"
+        },
+        "curios": {
+          "ok": true,
+          "a_chars": 281,
+          "a_packet_count": 1,
+          "rtt_b_ms": -0.06,
+          "no_a_packet": false,
+          "a_empty": false,
+          "error": null,
+          "anomalies": [],
+          "body_head": "/curios list\n/curios replace <slot> <index> <player> with <item> [<count>]\n/curios set <slot> <player> [<amount>]\n/curios add <slot> <player> [<amount>]\n/curios remove <slot> <player> [<amount>]\n/curios clear <player> [<slot>]\n/curios drop <player> [<slot>]\n/curios reset <player>\n"
+        },
+        "torchmaster": {
+          "ok": true,
+          "a_chars": 51,
+          "a_packet_count": 1,
+          "rtt_b_ms": -0.05,
+          "no_a_packet": false,
+          "a_empty": false,
+          "error": null,
+          "anomalies": [],
+          "body_head": "/torchmaster [torchdump]\n/torchmaster [entitydump]\n"
+        },
+        "ip": {
+          "ok": true,
+          "a_chars": 31,
+          "a_packet_count": 1,
+          "rtt_b_ms": -0.06,
+          "no_a_packet": false,
+          "a_empty": false,
+          "error": null,
+          "anomalies": [],
+          "body_head": "/ip reservoir (locate|set|get)\n"
+        },
+        "pncr": {
+          "ok": true,
+          "a_chars": 96,
+          "a_packet_count": 1,
+          "rtt_b_ms": -0.06,
+          "no_a_packet": false,
+          "a_empty": false,
+          "error": null,
+          "anomalies": [],
+          "body_head": "/pncr dump_nbt\n/pncr global_var (get|set|delete|list)\n/pncr amadrone_deliver (<toPos>|<player>)\n"
+        },
+        "libx": {
+          "ok": true,
+          "a_chars": 78,
+          "a_packet_count": 1,
+          "rtt_b_ms": -0.06,
+          "no_a_packet": false,
+          "a_empty": false,
+          "error": null,
+          "anomalies": [],
+          "body_head": "/libx hand [<nbt_path>]\n/libx entitydata <entities> <nbt>\n/libx reload common\n"
+        },
+        "sfm": {
+          "ok": true,
+          "a_chars": 72,
+          "a_packet_count": 1,
+          "rtt_b_ms": -0.05,
+          "no_a_packet": false,
+          "a_empty": false,
+          "error": null,
+          "anomalies": [],
+          "body_head": "/sfm bust_cable_network_cache\n/sfm show_bad_cable_cache_entries <block>\n"
+        },
+        "tinkerslevellingaddon": {
+          "ok": true,
+          "a_chars": 96,
+          "a_packet_count": 1,
+          "rtt_b_ms": -0.06,
+          "no_a_packet": false,
+          "a_empty": false,
+          "error": null,
+          "anomalies": [],
+          "body_head": "/tinkerslevellingaddon levels <targets> (add|set)\n/tinkerslevellingaddon xp <targets> (add|set)\n"
+        },
+        "cofh": {
+          "ok": true,
+          "a_chars": 287,
+          "a_packet_count": 1,
+          "rtt_b_ms": -0.09,
+          "no_a_packet": false,
+          "a_empty": false,
+          "error": null,
+          "anomalies": [],
+          "body_head": "/cofh crafting\n/cofh workbench\n/cofh enderchest [<player>]\n/cofh friend (add|remove|clear)\n/cofh heal [<targets>]\n/cofh ignite [<duration>|<targets>]\n/cofh invis [<flag>|<targets>]\n/cofh invuln [<flag>|<targets>]\n/cofh recharge [<targets>]\n/cofh repair [<targets>]\n/cofh zap [<targets>]\n"
+        },
+        "forge": {
+          "ok": true,
+          "a_chars": 194,
+          "a_packet_count": 1,
+          "rtt_b_ms": -0.07,
+          "no_a_packet": false,
+          "a_empty": false,
+          "error": null,
+          "anomalies": [],
+          "body_head": "/forge tps [<dim>]\n/forge track (start|reset|entity|te)\n/forge entity list [<filter>]\n/forge generate <pos> <count> [<dim>]\n/forge dimensions\n/forge mods\n/forge tags <registry> (list|get|query)\n"
+        },
+        "config": {
+          "ok": true,
+          "a_chars": 30,
+          "a_packet_count": 1,
+          "rtt_b_ms": -0.05,
+          "no_a_packet": false,
+          "a_empty": false,
+          "error": null,
+          "anomalies": [],
+          "body_head": "/config showfile <mod> <type>\n"
+        },
+        "lootr": {
+          "ok": true,
+          "a_chars": 250,
+          "a_packet_count": 1,
+          "rtt_b_ms": -0.06,
+          "no_a_packet": false,
+          "a_empty": false,
+          "error": null,
+          "anomalies": [],
+          "body_head": "/lootr [barrel] [<table>]\n/lootr [trapped_chest] [<table>]\n/lootr [chest] [<table>]\n/lootr [shulker] [<table>]\n/lootr [clear] [<profile>]\n/lootr [cart] [<table>]\n/lootr [custom]\n/lootr [id]\n/lootr [refresh]\n/lootr [decay]\n/lootr [openers] <location>\n"
+        },
+        "coe": {
+          "ok": true,
+          "a_chars": 43,
+          "a_packet_count": 1,
+          "rtt_b_ms": -0.05,
+          "no_a_packet": false,
+          "a_empty": false,
+          "error": null,
+          "anomalies": [],
+          "body_head": "/coe setvein <pos> <recipe> [<multiplier>]\n"
+        },
+        "tickaccelerate": {
+          "ok": true,
+          "a_chars": 126,
+          "a_packet_count": 1,
+          "rtt_b_ms": -0.06,
+          "no_a_packet": false,
+          "a_empty": false,
+          "error": null,
+          "anomalies": [],
+          "body_head": "/tickaccelerate [tps]\n/tickaccelerate [status]\n/tickaccelerate [toggle] <key>\n/tickaccelerate [reload]\n/tickaccelerate [help]\n"
+        },
+        "placebo": {
+          "ok": true,
+          "a_chars": 43,
+          "a_packet_count": 1,
+          "rtt_b_ms": -0.06,
+          "no_a_packet": false,
+          "a_empty": false,
+          "error": null,
+          "anomalies": [],
+          "body_head": "/placebo serialize_loot_table <loot_table>\n"
+        },
+        "bookshelf": {
+          "ok": true,
+          "a_chars": 68,
+          "a_packet_count": 1,
+          "rtt_b_ms": -0.06,
+          "no_a_packet": false,
+          "a_empty": false,
+          "error": null,
+          "anomalies": [],
+          "body_head": "/bookshelf font (item|block|book|say)\n/bookshelf hand <output_type>\n"
+        },
+        "twilightforest": {
+          "ok": true,
+          "a_chars": 158,
+          "a_packet_count": 1,
+          "rtt_b_ms": -0.06,
+          "no_a_packet": false,
+          "a_empty": false,
+          "error": null,
+          "anomalies": [],
+          "body_head": "/twilightforest center\n/twilightforest conquer [reactivate]\n/twilightforest info\n/twilightforest biomepng [<width>]\n/twilightforest shield <target> (set|add)\n"
+        },
+        "tf": {
+          "ok": true,
+          "a_chars": 0,
+          "a_packet_count": 1,
+          "rtt_b_ms": -0.05,
+          "no_a_packet": false,
+          "a_empty": true,
+          "error": null,
+          "anomalies": [],
+          "body_head": ""
+        },
+        "tffeature": {
+          "ok": true,
+          "a_chars": 0,
+          "a_packet_count": 1,
+          "rtt_b_ms": -0.05,
+          "no_a_packet": false,
+          "a_empty": true,
+          "error": null,
+          "anomalies": [],
+          "body_head": ""
+        },
+        "buildinggadgets": {
+          "ok": true,
+          "a_chars": 243,
+          "a_packet_count": 1,
+          "rtt_b_ms": -0.06,
+          "no_a_packet": false,
+          "a_empty": false,
+          "error": null,
+          "anomalies": [],
+          "body_head": "/buildinggadgets OverrideBuildSize <player>\n/buildinggadgets OverrideCopySize <player>\n/buildinggadgets ForceLoadChunks <player>\n/buildinggadgets OverrideBuildSizeList\n/buildinggadgets OverrideCopySizeList\n/buildinggadgets ForceLoadChunksList\n"
+        },
+        "projecte": {
+          "ok": true,
+          "a_chars": 280,
+          "a_packet_count": 1,
+          "rtt_b_ms": -0.07,
+          "no_a_packet": false,
+          "a_empty": false,
+          "error": null,
+          "anomalies": [],
+          "body_head": "/projecte clearknowledge <targets>\n/projecte dumpmissingemc\n/projecte removeemc [<item>]\n/projecte resetemc [<item>]\n/projecte setemc <emc> [<item>]\n/projecte showbag <color> (<target>|<uuid>)\n/projecte emc (add|remove|set|test|get)\n/projecte knowledge (clear|learn|unlearn|test)\n"
+        },
+        "lcadmin": {
+          "ok": true,
+          "a_chars": 209,
+          "a_packet_count": 1,
+          "rtt_b_ms": -0.07,
+          "no_a_packet": false,
+          "a_empty": false,
+          "error": null,
+          "anomalies": [],
+          "body_head": "/lcadmin traderdata (list|search|delete|debug|addToWhitelist)\n/lcadmin prepareForStructure <traderPos>\n/lcadmin taxes (list|delete|forceDisableTaxCollectors)\n/lcadmin events <player> (reward|list|unlock|lock)\n"
+        },
+        "lcbaltop": {
+          "ok": true,
+          "a_chars": 19,
+          "a_packet_count": 1,
+          "rtt_b_ms": -0.05,
+          "no_a_packet": false,
+          "a_empty": false,
+          "error": null,
+          "anomalies": [],
+          "body_head": "/lcbaltop [<page>]\n"
+        },
+        "lcbank": {
+          "ok": true,
+          "a_chars": 96,
+          "a_packet_count": 1,
+          "rtt_b_ms": -0.07,
+          "no_a_packet": false,
+          "a_empty": false,
+          "error": null,
+          "anomalies": [],
+          "body_head": "/lcbank give (allPlayers|allTeams|players|team)\n/lcbank take (allPlayers|allTeams|players|team)\n"
+        },
+        "lcconfig": {
+          "ok": true,
+          "a_chars": 219,
+          "a_packet_count": 1,
+          "rtt_b_ms": -0.12,
+          "no_a_packet": false,
+          "a_empty": false,
+          "error": null,
+          "anomalies": [],
+          "body_head": "/lcconfig reload\n/lcconfig edit (lightmanscurrency-common|lightmanscurrency-server)\n/lcconfig reset (lightmanscurrency-common|lightmanscurrency-server)\n/lcconfig view (lightmanscurrency-common|lightmanscurrency-server)\n"
+        },
+        "sbp": {
+          "ok": true,
+          "a_chars": 106,
+          "a_packet_count": 1,
+          "rtt_b_ms": -0.05,
+          "no_a_packet": false,
+          "a_empty": false,
+          "error": null,
+          "anomalies": [],
+          "body_head": "/sbp list [<playerName>]\n/sbp give <targets> <backpackUuid>\n/sbp removeNonPlayer <onlyWithEmptyInventory>\n"
+        },
+        "sophisticatedbackpacks": {
+          "ok": true,
+          "a_chars": 0,
+          "a_packet_count": 1,
+          "rtt_b_ms": -0.05,
+          "no_a_packet": false,
+          "a_empty": true,
+          "error": null,
+          "anomalies": [],
+          "body_head": ""
+        },
+        "ponderjs": {
+          "ok": true,
+          "a_chars": 33,
+          "a_packet_count": 1,
+          "rtt_b_ms": -0.05,
+          "no_a_packet": false,
+          "a_empty": false,
+          "error": null,
+          "anomalies": [],
+          "body_head": "/ponderjs generate_lang_template\n"
+        },
+        "planetgui": {
+          "ok": true,
+          "a_chars": 31,
+          "a_packet_count": 1,
+          "rtt_b_ms": -0.06,
+          "no_a_packet": false,
+          "a_empty": false,
+          "error": null,
+          "anomalies": [],
+          "body_head": "/planetgui [<target>] [<tier>]\n"
+        },
+        "obscure": {
+          "ok": true,
+          "a_chars": 73,
+          "a_packet_count": 1,
+          "rtt_b_ms": -0.05,
+          "no_a_packet": false,
+          "a_empty": false,
+          "error": null,
+          "anomalies": [],
+          "body_head": "/obscure reload\n/obscure assign <player> class aquamirae:sea_wolf <type>\n"
+        },
+        "dimtablet": {
+          "ok": true,
+          "a_chars": 70,
+          "a_packet_count": 1,
+          "rtt_b_ms": -0.06,
+          "no_a_packet": false,
+          "a_empty": false,
+          "error": null,
+          "anomalies": [],
+          "body_head": "/dimtablet add\n/dimtablet remove\n/dimtablet removeAll\n/dimtablet list\n"
+        },
+        "dimstorage": {
+          "ok": true,
+          "a_chars": 0,
+          "a_packet_count": 1,
+          "rtt_b_ms": -0.05,
+          "no_a_packet": false,
+          "a_empty": true,
+          "error": null,
+          "anomalies": [],
+          "body_head": ""
+        },
+        "ie": {
+          "ok": true,
+          "a_chars": 68,
+          "a_packet_count": 1,
+          "rtt_b_ms": -0.06,
+          "no_a_packet": false,
+          "a_empty": false,
+          "error": null,
+          "anomalies": [],
+          "body_head": "/ie mineral (list|get|put|setDepletion)\n/ie clearshaders [<player>]\n"
+        },
+        "aether": {
+          "ok": true,
+          "a_chars": 170,
+          "a_packet_count": 1,
+          "rtt_b_ms": -0.07,
+          "no_a_packet": false,
+          "a_empty": false,
+          "error": null,
+          "anomalies": [],
+          "body_head": "/aether time (set|add|query)\n/aether eternal_day (set|query)\n/aether player life_shards set <targets> <value>\n/aether sun_altar_whitelist (on|off|list|add|remove|reload)\n"
+        },
+        "tconstruct": {
+          "ok": true,
+          "a_chars": 236,
+          "a_packet_count": 1,
+          "rtt_b_ms": -0.07,
+          "no_a_packet": false,
+          "a_empty": false,
+          "error": null,
+          "anomalies": [],
+          "body_head": "/tconstruct modifiers <targets> (add|remove)\n/tconstruct materials (set|stats|traits)\n/tconstruct tool_stats <targets> (bonus|multiplier|reset)\n/tconstruct slots <targets> (add|set)\n/tconstruct report (modifier_usage|modifier_priority)\n"
+        },
+        "mek": {
+          "ok": true,
+          "a_chars": 145,
+          "a_packet_count": 1,
+          "rtt_b_ms": -0.09,
+          "no_a_packet": false,
+          "a_empty": false,
+          "error": null,
+          "anomalies": [],
+          "body_head": "/mek chunk (watch|unwatch|clear|flush)\n/mek debug\n/mek retrogen [<from>]\n/mek radiation (add|addEntity|get|heal|reduce|removeAll)\n/mek testrules\n"
+        },
+        "cyclic": {
+          "ok": true,
+          "a_chars": 467,
+          "a_packet_count": 1,
+          "rtt_b_ms": -0.11,
+          "no_a_packet": false,
+          "a_empty": false,
+          "error": null,
+          "anomalies": [],
+          "body_head": "/cyclic home (teleport|reset|set|save)\n/cyclic gethome\n/cyclic health (set|add|factor|random)\n/cyclic hearts (set|add|factor|random)\n/cyclic scoreboard (random|orandom|add|test)\n/cyclic attribute <attribute> (add|random|factor|reset)\n/cyclic gamemode <player> <value>\n/cyclic gravity (set|random|toggle)\n/cyclic glowing (set|random|toggle)\n/cyclic hunger (factor|add|set|random)\n/cyclic dev (nbt|tags"
+        },
+        "fluxnetworks": {
+          "ok": true,
+          "a_chars": 44,
+          "a_packet_count": 1,
+          "rtt_b_ms": -0.1,
+          "no_a_packet": false,
+          "a_empty": false,
+          "error": null,
+          "anomalies": [],
+          "body_head": "/fluxnetworks superadmin <targets> <enable>\n"
+        },
+        "foodlist": {
+          "ok": true,
+          "a_chars": 79,
+          "a_packet_count": 1,
+          "rtt_b_ms": -0.07,
+          "no_a_packet": false,
+          "a_empty": false,
+          "error": null,
+          "anomalies": [],
+          "body_head": "/foodlist size [<target>]\n/foodlist sync [<target>]\n/foodlist clear [<target>]\n"
+        },
+        "haveadv": {
+          "ok": true,
+          "a_chars": 23,
+          "a_packet_count": 1,
+          "rtt_b_ms": -0.05,
+          "no_a_packet": false,
+          "a_empty": false,
+          "error": null,
+          "anomalies": [],
+          "body_head": "/haveadv <advancement>\n"
+        },
+        "diet": {
+          "ok": true,
+          "a_chars": 271,
+          "a_packet_count": 1,
+          "rtt_b_ms": -0.07,
+          "no_a_packet": false,
+          "a_empty": false,
+          "error": null,
+          "anomalies": [],
+          "body_head": "/diet get <player> <group>\n/diet set <player> <group> <value>\n/diet add <player> <group> <value>\n/diet subtract <player> <group> <value>\n/diet reset <player>\n/diet pause <player>\n/diet resume <player>\n/diet clear <player>\n/diet export [group|mod_id|uncategorized|trails]\n"
+        },
+        "cca_api": {
+          "ok": true,
+          "a_chars": 0,
+          "a_packet_count": 1,
+          "rtt_b_ms": -0.05,
+          "no_a_packet": false,
+          "a_empty": true,
+          "error": null,
+          "anomalies": [],
+          "body_head": ""
+        },
+        "hostility": {
+          "ok": true,
+          "a_chars": 200,
+          "a_packet_count": 1,
+          "rtt_b_ms": -0.07,
+          "no_a_packet": false,
+          "a_empty": false,
+          "error": null,
+          "anomalies": [],
+          "body_head": "/hostility player <player> (difficulty|traitCap|dimensions)\n/hostility region (section|area)\n/hostility mobs <targets> level (rerollTrait|rerollTraitNoSuppression|setAndRerollTrait|addAndRerollTrait)\n"
+        },
+        "ars-reset": {
+          "ok": true,
+          "a_chars": 23,
+          "a_packet_count": 1,
+          "rtt_b_ms": -0.05,
+          "no_a_packet": false,
+          "a_empty": false,
+          "error": null,
+          "anomalies": [],
+          "body_head": "/ars-reset [<targets>]\n"
+        },
+        "ars-data": {
+          "ok": true,
+          "a_chars": 41,
+          "a_packet_count": 1,
+          "rtt_b_ms": -0.05,
+          "no_a_packet": false,
+          "a_empty": false,
+          "error": null,
+          "anomalies": [],
+          "body_head": "/ars-data dump augment-compatibility-csv\n"
+        },
+        "ars-pathing": {
+          "ok": true,
+          "a_chars": 0,
+          "a_packet_count": 1,
+          "rtt_b_ms": -0.05,
+          "no_a_packet": false,
+          "a_empty": true,
+          "error": null,
+          "anomalies": [],
+          "body_head": ""
+        },
+        "ars-light": {
+          "ok": true,
+          "a_chars": 29,
+          "a_packet_count": 1,
+          "rtt_b_ms": -0.05,
+          "no_a_packet": false,
+          "a_empty": false,
+          "error": null,
+          "anomalies": [],
+          "body_head": "/ars-light on\n/ars-light off\n"
+        },
+        "ars-tome": {
+          "ok": true,
+          "a_chars": 17,
+          "a_packet_count": 1,
+          "rtt_b_ms": -0.05,
+          "no_a_packet": false,
+          "a_empty": false,
+          "error": null,
+          "anomalies": [],
+          "body_head": "/ars-tome <tome>\n"
+        },
+        "ars-skull": {
+          "ok": true,
+          "a_chars": 54,
+          "a_packet_count": 1,
+          "rtt_b_ms": -0.05,
+          "no_a_packet": false,
+          "a_empty": false,
+          "error": null,
+          "anomalies": [],
+          "body_head": "/ars-skull <player_name> <duration> <nbt> <dropBlock>\n"
+        },
+        "create": {
+          "ok": true,
+          "a_chars": 502,
+          "a_packet_count": 1,
+          "rtt_b_ms": -0.1,
+          "no_a_packet": false,
+          "a_empty": false,
+          "error": null,
+          "anomalies": [],
+          "body_head": "/create rainbowDebug [on|off]\n/create overlay [reset]\n/create trains\n/create fixLighting\n/create debuginfo\n/create highlight [<pos>]\n/create killTrain <train>\n/create passenger <rider> <vehicle> [<seatIndex>]\n/create coupling (add|remove|removeAll)\n/create config [<path>]\n/create ponder [<scene>]\n/create clone [<begin>]\n/create glue <from> <to>\n/create util (replaceInCommandBlocks|clearRenderBuffe"
+        },
+        "c": {
+          "ok": true,
+          "a_chars": 427,
+          "a_packet_count": 1,
+          "rtt_b_ms": -0.07,
+          "no_a_packet": false,
+          "a_empty": false,
+          "error": null,
+          "anomalies": [],
+          "body_head": "/c rainbowDebug [on|off]\n/c overlay [reset]\n/c trains\n/c fixLighting\n/c debuginfo\n/c highlight [<pos>]\n/c killTrain <train>\n/c passenger <rider> <vehicle> [<seatIndex>]\n/c coupling (add|remove|removeAll)\n/c config [<path>]\n/c ponder [<scene>]\n/c clone [<begin>]\n/c glue <from> <to>\n/c util (replaceInCommandBlocks|clearRenderBuffers|camera|angle|flySpeed)\n/c u (replaceInCommandBlocks|clearRenderBuff"
+        },
+        "mantle": {
+          "ok": true,
+          "a_chars": 262,
+          "a_packet_count": 1,
+          "rtt_b_ms": -0.08,
+          "no_a_packet": false,
+          "a_empty": false,
+          "error": null,
+          "anomalies": [],
+          "body_head": "/mantle view_tag <type> <name>\n/mantle dump_tag <type> <name> [log|save|sources]\n/mantle dump_loot_modifiers (save|log)\n/mantle dump_all_tags [<type>]\n/mantle tags_for (id|held|targeted)\n/mantle harvest_tiers (save|log|list)\n/mantle tag_preference <type> <name>\n"
+        },
+        "cucumber": {
+          "ok": true,
+          "a_chars": 34,
+          "a_packet_count": 1,
+          "rtt_b_ms": -0.05,
+          "no_a_packet": false,
+          "a_empty": false,
+          "error": null,
+          "anomalies": [],
+          "body_head": "/cucumber fillenergy (block|hand)\n"
+        },
+        "open-patchouli-book": {
+          "ok": true,
+          "a_chars": 48,
+          "a_packet_count": 1,
+          "rtt_b_ms": -0.05,
+          "no_a_packet": false,
+          "a_empty": false,
+          "error": null,
+          "anomalies": [],
+          "body_head": "/open-patchouli-book <targets> <book> [<entry>]\n"
+        },
+        "polymorph": {
+          "ok": true,
+          "a_chars": 21,
+          "a_packet_count": 1,
+          "rtt_b_ms": -0.05,
+          "no_a_packet": false,
+          "a_empty": false,
+          "error": null,
+          "anomalies": [],
+          "body_head": "/polymorph conflicts\n"
+        },
+        "spark": {
+          "ok": true,
+          "a_chars": 16,
+          "a_packet_count": 1,
+          "rtt_b_ms": -0.05,
+          "no_a_packet": false,
+          "a_empty": false,
+          "error": null,
+          "anomalies": [],
+          "body_head": "/spark [<args>]\n"
+        },
+        "titanium-rewards": {
+          "ok": true,
+          "a_chars": 45,
+          "a_packet_count": 1,
+          "rtt_b_ms": -0.05,
+          "no_a_packet": false,
+          "a_empty": false,
+          "error": null,
+          "anomalies": [],
+          "body_head": "/titanium-rewards <action> <reward> <option>\n"
+        },
+        "titanium-rewards-grant": {
+          "ok": true,
+          "a_chars": 33,
+          "a_packet_count": 1,
+          "rtt_b_ms": -0.05,
+          "no_a_packet": false,
+          "a_empty": false,
+          "error": null,
+          "anomalies": [],
+          "body_head": "/titanium-rewards-grant <reward>\n"
+        },
+        "ae2": {
+          "ok": true,
+          "a_chars": 145,
+          "a_packet_count": 1,
+          "rtt_b_ms": -0.06,
+          "no_a_packet": false,
+          "a_empty": false,
+          "error": null,
+          "anomalies": [],
+          "body_head": "/ae2 supporters\n/ae2 chunklogger\n/ae2 spatial [info|tp|tpback|givecell]\n/ae2 channelmode [infinite|default|x2|x3|x4]\n/ae2 tickmonitor [<enable>]\n"
+        },
+        "aea": {
+          "ok": true,
+          "a_chars": 58,
+          "a_packet_count": 1,
+          "rtt_b_ms": -0.05,
+          "no_a_packet": false,
+          "a_empty": false,
+          "error": null,
+          "anomalies": [],
+          "body_head": "/aea channelcreate [<name>]\n/aea subscribe\n/aea broadcast\n"
+        }
+      }
+    },
+    "capability": {
+      "help help": {
+        "ok": true,
+        "a_chars": 18,
+        "b_text_ignored": "Unknown or incomplete command, see below for error\nprobe_b_500381_655421<--[HERE]\n",
+        "error": null,
+        "no_a_packet": false,
+        "body_head": "/help [<command>]\n"
+      },
+      "help 1": {
+        "ok": true,
+        "a_chars": 44,
+        "b_text_ignored": "Unknown or incomplete command, see below for error\nprobe_b_500383_904d8c<--[HERE]\n",
+        "error": null,
+        "no_a_packet": false,
+        "body_head": "Unknown command or insufficient permissions\n"
+      },
+      "help probe_no_such_cmd_7b5801": {
+        "ok": true,
+        "a_chars": 44,
+        "b_text_ignored": "Unknown or incomplete command, see below for error\nprobe_b_500385_575eae<--[HERE]\n",
+        "error": null,
+        "no_a_packet": false,
+        "body_head": "Unknown command or insufficient permissions\n"
+      }
+    },
+    "post_scan_isolation": {
+      "list_reply_head": "There are 0 of a max of 20 players online: \n",
+      "looks_like_list": true
+    },
+    "concurrent_clients": {
+      "rounds": 5,
+      "observations": [
+        {
+          "round": 0,
+          "id1": 300001,
+          "id2": 300002,
+          "conn1_ids": [
+            300001,
+            300001
+          ],
+          "conn2_ids": [
+            300002,
+            300002,
+            300002,
+            300002
+          ],
+          "conn1_chars": 7122,
+          "conn2_chars": 14244
+        },
+        {
+          "round": 1,
+          "id1": 300003,
+          "id2": 300004,
+          "conn1_ids": [
+            300003,
+            300003
+          ],
+          "conn2_ids": [
+            300004,
+            300004,
+            300004,
+            300004
+          ],
+          "conn1_chars": 7122,
+          "conn2_chars": 14244
+        },
+        {
+          "round": 2,
+          "id1": 300005,
+          "id2": 300006,
+          "conn1_ids": [
+            300005,
+            300005
+          ],
+          "conn2_ids": [
+            300006,
+            300006,
+            300006,
+            300006
+          ],
+          "conn1_chars": 7122,
+          "conn2_chars": 14244
+        },
+        {
+          "round": 3,
+          "id1": 300007,
+          "id2": 300008,
+          "conn1_ids": [
+            300007,
+            300007
+          ],
+          "conn2_ids": [
+            300008,
+            300008,
+            300008,
+            300008
+          ],
+          "conn1_chars": 7122,
+          "conn2_chars": 14244
+        },
+        {
+          "round": 4,
+          "id1": 300009,
+          "id2": 300010,
+          "conn1_ids": [
+            300009,
+            300009
+          ],
+          "conn2_ids": [
+            300010,
+            300010,
+            300010,
+            300010
+          ],
+          "conn1_chars": 7122,
+          "conn2_chars": 14244
+        }
+      ],
+      "anomalies": []
+    },
+    "plugin": {
+      "import": "ok",
+      "help_via_plugin": {
+        "returned_chars": 4096,
+        "looks_truncated": true,
+        "elapsed_ms": 2.78,
+        "head": "/advancement (grant|revoke)\n/attribute <target> <attribute> (get|base|modifier)\n/execute (run|if|unless|as|at|store|positioned|rotated|facing|align|anchored|in)"
+      },
+      "list_after_plugin_help": {
+        "elapsed_ms": 0.23,
+        "head": "lock_rewards|open_book)\n/custommachinery (log|reload)\n/cm (log|reload)\n/kubejs (help|custom_command|hand|offhand|inventory|hotbar|errors|warnings|reload|export|list_tag|dump_registry|stages|painter|pa",
+        "looks_like_list": false,
+        "contaminated": true
+      },
+      "shared_lock": {
+        "lock_held_s": 0.44,
+        "scan_ok": true,
+        "scan_a_chars": 7122,
+        "list_wait_after_lock_ms": 0.73,
+        "list_head": "There are 0 of a max of 20 players online: \n",
+        "list_correct": true
+      }
+    }
+  },
+  "root_count_N": 183,
+  "budget_requests_2Nplus4": 370,
+  "root_set_consistent": true,
+  "root_set_diff": []
+}

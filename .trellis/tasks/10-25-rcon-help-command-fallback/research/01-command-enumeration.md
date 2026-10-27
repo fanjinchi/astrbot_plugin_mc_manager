@@ -50,8 +50,18 @@ getAllUsage   → wine age <years>     branched a x        tm -> tell      self 
 
 - 根级 `help`：只到根命令 + 压缩子树，深分支丢失（`branched a x/y` 变成 `(a|b)`，`wine age <years>` 变成 `(age|info)`）。
 - `help <root>`：把目标节点的**一级子命令**逐条展开，浅树可完整还原（`wine age <years>` / `wine info`）；更深分支仍压缩为 `(a|b)`、可选组 `[x]`、redirect `-> target`、redirect-to-root `...`。
-- 目标节点没有可见子命令时 map 为空 → **RCON 收到空响应是合法结果**（表示该根没有可见一级子命令 usage），不得按解析失败处理；必须保留根级 `help` 已采集的该根条目，不能误删或把整次采集当成空快照。
+- 目标节点没有可见子命令时 map 为空 → **RCON 收到空响应是合法结果**（表示该根没有可见一级子命令 usage），不得按解析失败处理。
 - smart usage 的 `[可选]`/`(a|b)` 无法还原成 Brigadier 的 required/optional 语义；不得声称与 KubeJS 主路径等价。
+
+### 2026-10-26 规划复核：纯根证据与 A/B 完整性
+
+后续规划复核进一步收紧上述数据边界，并以 `../design.md` 为实施契约：
+
+- targeted 空响应和根级单独 `/foo` 均不能证明裸根有 `executes`；RCON 不得据此发布普通 `syntax="foo"`。显式 redirect 是别名证据，可按共享契约保留；KubeJS 通过 `getAllUsage` 得到的纯根条目不受影响。
+- 根级 help 主要用于根发现和首尾根集合检查，普通 usage 来自 targeted 的正向一级证据。所有根均无 usage/redirect 时 entries 为空，不发布快照。
+- 长响应采用受控 A/B：A 首包（含合法空包）到达后才发送短随机未知 literal B；继续收 A，以 B 完成。禁止立即连写 A+B，因为服务端可能把两请求合并读入 1460 字节缓冲并按错误 framing 断连。
+- B 是完成判据，idle-drain 只能诊断。EOF、截断、错/未知 id、B 缺失/尾随、超时或超限失败关闭；协议无片序号/总长度，不承诺普遍检测中间内容片被删除但仍有合法 B 的情形。
+- 首末根 help 加 N 个 targeted，每次都有 B，共 `2(N+2)=2N+4` 个 RCON 请求。根集合一致不能证明同根集合下未 reload，不能承诺全局原子快照。
 
 ### RCON 传输
 
@@ -60,14 +70,14 @@ getAllUsage   → wine age <years>     branched a x        tm -> tell      self 
 - 当前依赖 `aio-mc-rcon 3.5.0`：`/home/guigui/code/AstrBot/.venv/lib/python3.12/site-packages/aiomcrcon/client.py` 的 `_send_msg` 在 78 行，95/98 行只读取一个长度和一个响应体，112 行直接返回；`send_cmd` 在 114 行。
 - 本插件 `rcon_client.py` 仅调用 `client.send_cmd(command)`。现有锁只防止并发发送，不能接收全部分片或清理残留响应。
 
-因此必须先实现按 request id 的有界完整接收和结束判定。失败时应重连并放弃快照，不能保存截断结果或让残片进入下一条命令。
+因此必须先实现按 request id 的有界完整接收和结束判定。扫描使用独立低层 socket，但整次扫描必须与现有 `_send_lock` 共用互斥边界；失败时关闭扫描 socket 并放弃快照，不能保存截断结果或让残片进入下一条命令。
 
 ## 方案比较
 
 | 方案 | 可得数据 | 可靠性/成本 | 决策 |
 |---|---|---|---|
 | KubeJS dispatcher 导出 | 结构化命令树、完整 usage | 高保真；复用现有管道，低—中成本 | 主路径 |
-| RCON root + targeted help | RCON 可见根及一级子命令 smart usage（非 getAllUsage） | 运行时真实；多包、N+1、解析与一致性成本中—高 | 无 KubeJS 首选 fallback（降级口径） |
+| RCON root + targeted help | RCON 可见根及一级子命令 smart usage（非 getAllUsage） | 运行时真实；多包、`2N+4` 请求、解析与一致性成本中—高 | 无 KubeJS 首选 fallback（降级口径） |
 | 被动 `latest.log` | 偶发注册消息、mod 列表，通常无参数结构 | 覆盖不可判定、格式任意、旧日志风险 | 排除 |
 | 静态 JAR | 简单 builder 的部分 literal/argument | 动态注册、配置、反射、映射/混淆导致误报漏报；成本很高 | 不作为生产方案 |
 | 已有控制台接口 | 同样来自 HelpCommand，逐行输出可能更易解析 | 面板协议无统一标准 | 已有能力时才考虑 |
@@ -79,22 +89,22 @@ KubeJS 动态命令的具体反例：`/home/guigui/mc/CTI0.46/kubejs/server_scri
 
 ## 采集与发布约束
 
-1. 根级 `help` 用于发现并提供根级 smart usage；逐根 `help <root>` 提供该根的**一级子命令** usage，更深分支是 smart usage 压缩语法，快照必须标记 `producer=rcon` 且不得宣称完整。阶段二 design 必须明确根级与 targeted 结果的合并/去重规则，合法 `syntax == name` 不得过滤。
-2. 不依赖 `splitlines()`；按 `/` 切分并用已知根前缀校验；空响应表示该根没有可见一级子命令 usage，不算异常，并保留根级 `help` 中该根的已有条目；异常结构才失败。离线夹具需覆盖 root-only、`foo` / `foo bar` 并存和 empty-targeted。
+1. 根级 `help` 用于根发现、显式 redirect 证据和首尾根集合检查；逐根 `help <root>` 提供该根的**一级子命令** usage，更深分支是 smart usage 压缩语法，快照必须标记 `producer=rcon` 且不得宣称完整。
+2. 不依赖 `splitlines()`；按 `/` 切分并用已知根前缀校验。空 targeted 合法但不回填纯根；根级 `/foo` 和空 targeted 都不能生成普通 `syntax="foo"`，显式 redirect 例外。离线夹具需覆盖 root-only、`foo` / `foo bar` 并存和 empty-targeted，KubeJS 的合法纯根不过滤。
 3. 不依赖固定英文错误消息；unknown/localized error 和自定义 help 必须通过能力探针与结构校验处理。
-4. 全部目标根成功后才一次性替换缓存；失败保留旧有效快照。
-5. 限制请求数、响应大小和总耗时；扫描期间 reload 或快照不一致时不得发布混合结果。
+4. 全部目标根成功、末次根集合一致且 entries 非空后才一次性替换缓存；失败保留旧有效快照。
+5. 按 `2N+4` 请求公式限制请求数、响应大小和总耗时；检测到根集合不一致或可发现结构异常时不得发布，同根集热替换不属于可保证检测范围。
 6. 参数类型、数值范围、精确权限和 mod 归属不属于本期保证。
 
 ## 后续最小实测
 
 本调研未连接在线服务器，以下实验须在获批测试实例执行：
 
-1. 在 1.19.2、1.20.1 记录 root/targeted help 原始包、request id、包数、总字符数与结束判定；覆盖超过 4096 字符和 `help execute`。
+1. 在 1.19.2、1.20.1 隔离副本记录 root/targeted help 原始包、request id、包数、总字符/字节与结束判定；覆盖超过 4096 字符和 `help execute`。先做立即 A+B 的负面试验，再验证 A 首包后才发 B 的受控序列。
 2. 用 `help help`、`help 1` 和不存在命令检测 help 是否被覆盖及当前错误形态，不实现分页循环。
-3. Farming 对比 `help` 与 `help wine`：`help wine` 应给出 `/wine age <years>` 与 `/wine info`，根级 `help` 只给压缩形式；CTI 检查 `help researchdump` 的动态命令可见性；记录终端命令 `help <root>` 的空响应，以及只有根 usage、根与子 usage 并存和 empty-targeted 时的合并结果，确认空响应不删除根级条目。
-4. 与同一时刻的结构化 dispatcher 导出比较根集合与一级子命令集合，记录深层压缩差异、权限过滤、玩家限制与 parser 错误，并记录 N+1 耗时。
-5. 模拟缺包、错 request id、非预期文本和中途断连，验证旧缓存保留且后续 RCON 响应不受污染。
+3. Farming 对比 `help` 与 `help wine`：`help wine` 应给出 `/wine age <years>` 与 `/wine info`，根级 `help` 只给压缩形式；CTI 检查 `help researchdump` 的动态命令可见性；记录终端命令的空 targeted、root-only、根与子并存和 redirect，确认不伪造普通纯根。
+4. 在有 KubeJS 隔离副本对同一 dispatcher 做结构化导出与 RCON 探针对照，比较根集合与一级子命令集合，记录深层压缩、纯根缺失、权限过滤、玩家限制、parser 错误、实际 `2N+4` 请求数和耗时。
+5. 用 fake server 构造 EOF、截断 length/body、错/未知 request id、B 缺失/尾随、非预期文本、超时和超限；真机验证可发现的根集合变化。验证旧缓存保留且后续 RCON 响应不受污染，不把任意中间删片或同根集热替换写成必能检测。
 
 ## Sources
 

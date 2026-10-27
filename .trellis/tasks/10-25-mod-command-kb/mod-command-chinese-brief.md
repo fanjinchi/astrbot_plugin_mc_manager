@@ -67,8 +67,8 @@
 引用位置：
 - 父任务 PRD：`.trellis/tasks/10-25-mod-command-kb/prd.md`（Out of Scope 第 1 条、第 4 条；正文"本期是语法级 MVP"）
 - 父任务 design：`.trellis/tasks/10-25-mod-command-kb/design.md`（`desc` 可缺省、不生成模组中文描述；不增加自动语义映射）
-- 子任务 PRD：`.trellis/tasks/10-25-kubejs-command-dump/prd.md`（Out of Scope 第一条）
-- 调研：`.trellis/tasks/10-25-kubejs-command-dump/research/01-kubejs-api.md`（结论第 5 条：只能得到 `<name>` 形式 usage，拿不到描述/权限/modid）
+- 子任务 PRD：`.trellis/tasks/archive/2026-10/10-25-kubejs-command-dump/prd.md`（Out of Scope 第一条）
+- 调研：`.trellis/tasks/archive/2026-10/10-25-kubejs-command-dump/research/01-kubejs-api.md`（结论第 5 条：只能得到 `<name>` 形式 usage，拿不到描述/权限/modid）
 
 ---
 
@@ -203,8 +203,8 @@
 | Issue #5（原始目标） | GitHub `fanjinchi/astrbot_plugin_mc_manager#5` |
 | Issue #3（文档问答轴，未立项） | GitHub `fanjinchi/astrbot_plugin_mc_manager#3` |
 | 父任务需求/设计 | `.trellis/tasks/10-25-mod-command-kb/prd.md`、`design.md` |
-| 子任务需求/设计/实施 | `.trellis/tasks/10-25-kubejs-command-dump/{prd,design,implement}.md` |
-| KubeJS API 调研（能力边界） | `.trellis/tasks/10-25-kubejs-command-dump/research/01-kubejs-api.md` |
+| 子任务需求/设计/实施 | `.trellis/tasks/archive/2026-10/10-25-kubejs-command-dump/{prd,design,implement}.md` |
+| KubeJS API 调研（能力边界） | `.trellis/tasks/archive/2026-10/10-25-kubejs-command-dump/research/01-kubejs-api.md` |
 | 导出实现 | `assets/runtime_dump.js`（`rdCommandEntries`、`RD_VERSION=3`） |
 | 快照校验/发布/查询 | `kb/commands.py` |
 | 内置原版命令（唯一现成中文来源） | `assets/vanilla_commands.json`（74 条，含 `desc`） |

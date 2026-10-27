@@ -2,5 +2,12 @@
 {"file":".trellis/spec/backend/quality-guidelines.md","reason":"编译、真机验证、权限和反过度工程检查。"}
 {"file":".trellis/spec/backend/error-handling.md","reason":"错误边界、RCON 返回语义和失败隔离检查。"}
 {"file":".trellis/spec/backend/runtime-dump.md","reason":"核对四类旧契约未回归并更新 commands 契约。"}
-{"file":".trellis/tasks/10-25-mod-command-kb/prd.md","reason":"最终按父 AC1–AC6 验收。"}
-{"file":".trellis/tasks/10-25-mod-command-kb/design.md","reason":"核对共享 schema、原子发布、查询合并与生产者优先级。"}
+{"file":".trellis/tasks/10-25-mod-command-kb/prd.md","reason":"最终按父 AC1–AC7 验收。"}
+{"file":".trellis/tasks/10-25-mod-command-kb/design.md","reason":"核对共享 schema、原子发布、查询合并、生产者边界和可检测限制。"}
+{"file":".trellis/tasks/10-25-mod-command-kb/implement.md","reason":"核对五阶段顺序、集成检查和回滚约束。"}
+{"file":".trellis/tasks/archive/2026-10/10-25-kubejs-command-dump/prd.md","reason":"核对子任务一已完成范围和共享契约来源。"}
+{"file":".trellis/tasks/archive/2026-10/10-25-kubejs-command-dump/design.md","reason":"核对 KubeJS 主路径和命令查询实现设计。"}
+{"file":".trellis/tasks/archive/2026-10/10-25-kubejs-command-dump/implement.md","reason":"核对子任务一实际双版本验证证据。"}
+{"file":".trellis/tasks/10-25-rcon-help-command-fallback/prd.md","reason":"核对 RCON AC1–AC7、P0 start gate 和不可检测边界。"}
+{"file":".trellis/tasks/10-25-rcon-help-command-fallback/design.md","reason":"核对 A/B、共享锁、纯根、2N+4 和首尾根集合检查。"}
+{"file":".trellis/tasks/10-26-command-intent-search/prd.md","reason":"核对英文意图检索 AC1–AC5、真实快照缺口和同一模型 5/5。"}

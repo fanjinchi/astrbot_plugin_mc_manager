@@ -1,7 +1,12 @@
 {"file":".trellis/spec/backend/index.md","reason":"Backend 规范入口与跨层约束。"}
 {"file":".trellis/spec/backend/runtime-dump.md","reason":"KubeJS、RCON 回执、发布和 builder 的现有交叉契约。"}
 {"file":".trellis/spec/backend/directory-structure.md","reason":"确认功能落在 kb、runtime_dump 和 main 的正确边界。"}
-{"file":".trellis/tasks/10-25-kubejs-command-dump/prd.md","reason":"首个可执行子任务，建立共享契约和 KubeJS 主路径。"}
-{"file":".trellis/tasks/10-25-rcon-help-command-fallback/prd.md","reason":"后续子任务，依赖 KubeJS 阶段完成后才能启动。"}
-{"file":".trellis/tasks/10-25-kubejs-command-dump/research/01-kubejs-api.md","reason":"活动 dispatcher、getAllUsage 和双版本 API 证据。"}
-{"file":".trellis/tasks/10-25-rcon-help-command-fallback/research/01-command-enumeration.md","reason":"无 KubeJS 方案选择与 RCON 传输风险。"}
+{"file":".trellis/tasks/archive/2026-10/10-25-kubejs-command-dump/prd.md","reason":"已归档子任务一，建立共享契约和 KubeJS 主路径。"}
+{"file":".trellis/tasks/archive/2026-10/10-25-kubejs-command-dump/design.md","reason":"已实现的共享 schema、原子发布和查询设计。"}
+{"file":".trellis/tasks/archive/2026-10/10-25-kubejs-command-dump/implement.md","reason":"子任务一实际实施与双版本验证证据。"}
+{"file":".trellis/tasks/archive/2026-10/10-25-kubejs-command-dump/research/01-kubejs-api.md","reason":"活动 dispatcher、getAllUsage 和双版本 API 证据。"}
+{"file":".trellis/tasks/10-25-rcon-help-command-fallback/prd.md","reason":"后续 RCON 子任务，必须先完成 P0 双版本隔离副本探针。"}
+{"file":".trellis/tasks/10-25-rcon-help-command-fallback/design.md","reason":"A/B、共享锁、纯根和 2N+4 的详细实施契约。"}
+{"file":".trellis/tasks/10-25-rcon-help-command-fallback/research/01-command-enumeration.md","reason":"无 KubeJS 方案选择、smart usage 与 RCON 传输风险。"}
+{"file":".trellis/tasks/10-26-command-intent-search/prd.md","reason":"第三子任务的离线先行启动口径和 AC4 真实模型完成门槛。"}
+{"file":".trellis/tasks/10-26-command-intent-search/research/01-intent-retrieval.md","reason":"英文 token AND、五目标查询和语义层非目标依据。"}
