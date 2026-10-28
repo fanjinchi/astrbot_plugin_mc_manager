@@ -3,6 +3,7 @@
 包含查看玩家、格式化消息、自定义命令执行功能
 """
 
+import shlex
 from typing import TYPE_CHECKING
 
 if TYPE_CHECKING:
@@ -48,7 +49,9 @@ async def list_players() -> str:
     return f"在线玩家: {result}"
 
 
-async def tellraw(message: str, sender: str = "Bot", color: str = "yellow", target: str = "@a") -> str:
+async def tellraw(
+    message: str, sender: str = "Bot", color: str = "yellow", target: str = "@a"
+) -> str:
     """
     通过tellraw在游戏公屏发送聊天消息
 
@@ -62,16 +65,130 @@ async def tellraw(message: str, sender: str = "Bot", color: str = "yellow", targ
         执行结果信息
     """
     rcon = get_rcon()
-    
+
     # 转义消息中的特殊字符
     message = message.replace('"', '\\"')
     sender = sender.replace('"', '\\"')
-    
+
     # 构建JSON格式的tellraw命令
     json_text = f'{{"text":"<{sender}> {message}", "color":"{color}"}}'
-    
-    result = await rcon.execute_async(f'tellraw {target} {json_text}')
+
+    result = await rcon.execute_async(f"tellraw {target} {json_text}")
     return f"发送消息到 {target}: <{sender}> {message} [{result}]"
+
+
+def _execute_run_offset(tokens: list[str]) -> int:
+    """Return the token offset after the outer execute command's run literal.
+
+    Args:
+        tokens: Tokenized command beginning with execute.
+
+    Returns:
+        The offset of the first token in the command executed by run.
+
+    Raises:
+        ValueError: If the execute chain is unsupported or incomplete.
+        IndexError: If a known clause is missing arguments.
+    """
+    index = 1
+    while index < len(tokens):
+        clause = tokens[index].lower()
+        if clause == "run":
+            return index + 1
+        if clause in {"align", "anchored", "as", "at", "in"}:
+            index += 2
+        elif clause == "positioned":
+            index += 3 if tokens[index + 1].lower() == "as" else 4
+        elif clause in {"facing", "rotated"}:
+            # Both forms have three argument tokens: vec3, entity+anchor, or rot/as+target.
+            index += 4 if clause == "facing" else 3
+        elif clause in {"if", "unless"}:
+            condition = tokens[index + 1].lower()
+            if condition in {"biome", "block"}:
+                index += 6
+            elif condition == "blocks":
+                index += 12
+            elif condition == "data":
+                source = tokens[index + 2].lower()
+                if source == "block":
+                    index += 7
+                elif source in {"entity", "storage"}:
+                    index += 5
+                else:
+                    raise ValueError("Unknown execute data source")
+            elif condition in {"dimension", "entity", "function", "predicate"}:
+                index += 3
+            elif condition == "loaded":
+                index += 5
+            elif condition == "score":
+                comparison = tokens[index + 4].lower()
+                if comparison == "matches":
+                    index += 6
+                elif comparison in {"<", "<=", "=", ">=", ">"}:
+                    index += 7
+                else:
+                    raise ValueError("Unknown execute score comparison")
+            else:
+                raise ValueError("Unknown execute condition")
+        elif clause == "store":
+            if tokens[index + 1].lower() not in {"result", "success"}:
+                raise ValueError("Unknown execute store mode")
+            target = tokens[index + 2].lower()
+            if target == "block":
+                index += 9
+            elif target in {"entity", "storage"}:
+                index += 7
+            elif target in {"bossbar", "score"}:
+                index += 5
+            else:
+                raise ValueError("Unknown execute store target")
+        else:
+            raise ValueError("Unknown execute clause")
+    raise ValueError("Execute command has no run clause")
+
+
+def _find_dangerous_command(command: str) -> str | None:
+    """Find a dangerous command at the root or behind nested execute run clauses.
+
+    Args:
+        command: Raw Minecraft command.
+
+    Returns:
+        The normalized dangerous command name, or None for an allowed command.
+
+    Raises:
+        ValueError: If tokenization fails or an execute chain cannot be parsed safely.
+        IndexError: If an execute clause is incomplete.
+    """
+    tokens = shlex.split(command, comments=False, posix=True)
+    dangerous_commands = {
+        "stop",
+        "op",
+        "deop",
+        "ban",
+        "ban-ip",
+        "pardon",
+        "pardon-ip",
+    }
+    dangerous_whitelist_subcommands = {"on", "off", "add", "remove", "reload"}
+
+    while tokens:
+        root = tokens[0].lower().removeprefix("/")
+        if root.startswith("minecraft:"):
+            root = root.removeprefix("minecraft:")
+        if root in dangerous_commands:
+            return root
+        if (
+            root == "whitelist"
+            and len(tokens) > 1
+            and tokens[1].lower() in dangerous_whitelist_subcommands
+        ):
+            return root
+        if root != "execute":
+            return None
+        tokens = tokens[_execute_run_offset(tokens) :]
+
+    raise ValueError("Execute run clause has no command")
 
 
 async def execute_command(command: str) -> str:
@@ -84,14 +201,17 @@ async def execute_command(command: str) -> str:
     Returns:
         命令执行结果
     """
+    if not command.strip():
+        return "错误: 命令不能为空。"
+
+    if not _enable_dangerous_commands:
+        try:
+            dangerous_command = _find_dangerous_command(command)
+        except (ValueError, IndexError):
+            return "错误: 无法可靠解析命令，已停止执行。"
+        if dangerous_command:
+            return f"错误: 命令 '{dangerous_command}' 是危险命令，已被禁用。"
+
     rcon = get_rcon()
-    
-    # 检查危险命令
-    dangerous_commands = ["stop", "ban-ip"]
-    cmd_base = command.split()[0].lower() if command else ""
-    
-    if cmd_base in dangerous_commands and not _enable_dangerous_commands:
-        return f"错误: 命令 '{cmd_base}' 是危险命令，已被禁用。"
-    
     result = await rcon.execute_async(command)
     return f"执行命令 '{command}': {result}"
