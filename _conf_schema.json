@@ -56,14 +56,44 @@
   "enable_system_event_context": {
     "type": "bool",
     "title": "系统事件注入上下文",
-    "description": "是否把进服/退服/死亡/成就等系统事件也注入LLM会话上下文（群推送由 enable_system_event_forward 控制）",
+    "description": "是否把进服/退服/死亡/成就等系统事件也注入LLM会话上下文（群推送由 system_event_push 分组按类型控制）",
     "default": false
   },
-  "enable_system_event_forward": {
-    "type": "bool",
+  "system_event_push": {
+    "type": "object",
     "title": "系统事件推送到群",
-    "description": "是否把进服/退服/死亡/成就等系统事件推送到绑定群（默认开；只影响群推送，不影响 LLM 上下文注入）",
-    "default": true
+    "description": "系统事件推送到群",
+    "hint": "按事件类型独立勾选，默认全部关闭；只影响群推送，不影响 LLM 上下文注入（由 enable_system_event_context 控制）。旧的整开关 enable_system_event_forward 已移除",
+    "items": {
+      "join": {
+        "type": "bool",
+        "title": "玩家进服",
+        "description": "玩家进服",
+        "hint": "玩家加入游戏时推送到绑定群",
+        "default": false
+      },
+      "leave": {
+        "type": "bool",
+        "title": "玩家退服",
+        "description": "玩家退服",
+        "hint": "玩家离开游戏时推送到绑定群",
+        "default": false
+      },
+      "death": {
+        "type": "bool",
+        "title": "玩家死亡",
+        "description": "玩家死亡",
+        "hint": "玩家死亡时把死因推送到绑定群",
+        "default": false
+      },
+      "advancement": {
+        "type": "bool",
+        "title": "达成成就",
+        "description": "达成成就",
+        "hint": "玩家达成成就时推送到绑定群",
+        "default": false
+      }
+    }
   },
   "unified_group_umo": {
     "type": "string",

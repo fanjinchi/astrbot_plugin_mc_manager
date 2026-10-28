@@ -54,7 +54,7 @@ broadcast-rcon-to-ops=true
 | `bot_nickname` | 在MC中显示的机器人昵称 | `"Bot"` |
 | `enable_unified_context` | 启用MC和QQ群的统一上下文 | `false` |
 | `enable_system_event_context` | 系统事件（进退服/死亡/成就）也注入LLM上下文 | `false` |
-| `enable_system_event_forward` | 系统事件（进退服/死亡/成就）推送到绑定群 | `true` |
+| `system_event_push` | 系统事件推送到绑定群，分组内按 `join`/`leave`/`death`/`advancement` 独立开关（老的 `enable_system_event_forward` 已移除） | 组内四项全 `false` |
 | `unified_group_umo` | 绑定群UMO（推荐用 `mc绑定` 命令自动设置，无需手填） | `""` |
 | `mc_bridge_prefix` | 游戏内聊天转发到QQ群的前缀（留空=全转） | `"mc喊话"` |
 | `mc_message_prefix` | 转发到QQ群的MC消息前缀 | `"[MC]"` |
@@ -76,7 +76,12 @@ broadcast-rcon-to-ops=true
   "bot_nickname": "MC助手",
   "enable_unified_context": false,
   "enable_system_event_context": false,
-  "enable_system_event_forward": true,
+  "system_event_push": {
+    "join": false,
+    "leave": false,
+    "death": false,
+    "advancement": false
+  },
   "unified_group_umo": "",
   "mc_bridge_prefix": "mc喊话",
   "mc_message_prefix": "[MC]",
@@ -117,7 +122,7 @@ broadcast-rcon-to-ops=true
 | `mc喊话 <内容>` | 把消息发送到MC游戏内聊天（带QQ昵称前缀） | 绑定群成员，5秒冷却 |
 
 绑定后自动生效的功能：
-- 📨 **MC→QQ 传话**：游戏内发送以 `mc喊话` 开头的消息会转发到绑定群（前缀可用 `mc_bridge_prefix` 配置修改或留空全转）；进服/退服/死亡/成就等系统事件自动推送到绑定群（带 `[MC]` 前缀；可在配置中用 `enable_system_event_forward` 关闭）
+- 📨 **MC→QQ 传话**：游戏内发送以 `mc喊话` 开头的消息会转发到绑定群（前缀可用 `mc_bridge_prefix` 配置修改或留空全转）；系统事件（进服/退服/死亡/成就，带 `[MC]` 前缀）按 `system_event_push` 分组里的独立开关分别推送，默认全关
 - 💬 **QQ→MC 喊话**：`mc喊话` 命令经 RCON 把消息送进游戏
 - 🤖 **LLM 传话**：MC玩家通过唤醒词与LLM对话，回复自动回到游戏；LLM 也可用 `send_to_qq_group` 工具主动向绑定群发消息
 

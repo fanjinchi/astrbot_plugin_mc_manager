@@ -72,8 +72,16 @@ class MCManagerPlugin(Star):
         self.mc_message_prefix = self.config.get("mc_message_prefix", "[MC]")
         # 系统事件（进/退服、死亡、成就）注入 LLM 会话上下文的开关
         self.enable_system_event_context = self.config.get("enable_system_event_context", False)
-        # 系统事件是否推送到绑定群（默认开；只影响群推送，不影响上下文注入）
-        self.enable_system_event_forward = self.config.get("enable_system_event_forward", True)
+        # 系统事件推送到绑定群：按事件类型独立开关（默认全关，只影响群推送，不影响上下文注入）。
+        # 旧的整体开关 enable_system_event_forward 已移除，用户配置里的残留 key 由 AstrBot
+        # 配置完整性检查自动清掉（astrbot_config.check_config_integrity）。
+        _push_cfg = self.config.get("system_event_push") or {}
+        self.system_event_push = {
+            "join": bool(_push_cfg.get("join", False)),
+            "leave": bool(_push_cfg.get("leave", False)),
+            "death": bool(_push_cfg.get("death", False)),
+            "advancement": bool(_push_cfg.get("advancement", False)),
+        }
         # 游戏内聊天转发到绑定群的前缀（默认 mc喊话，留空=全部转发）；系统事件转发不受此前缀控制
         self.mc_bridge_prefix = self.config.get("mc_bridge_prefix", "mc喊话")
         
@@ -199,9 +207,14 @@ class MCManagerPlugin(Star):
             # QQ官方机器人主动推送有配额/群发言前提等限制，失败仅记日志不打断监听
             logger.error(f"转发MC消息到绑定群失败: {e}")
     
-    async def _forward_system_event(self, text: str):
-        """系统事件转发到绑定群（受 enable_system_event_forward 控制；与上下文注入开关独立）"""
-        if self.enable_system_event_forward:
+    async def _forward_system_event(self, event_type: str, text: str):
+        """系统事件转发到绑定群（按事件类型独立开关；与上下文注入开关独立）
+
+        Args:
+            event_type: 事件类型（join/leave/death/advancement），查 self.system_event_push
+            text: 要推送的文本
+        """
+        if self.system_event_push.get(event_type, False):
             await self._forward_to_bound_group(text)
     
     async def _on_player_join(self, player: str):
@@ -212,7 +225,7 @@ class MCManagerPlugin(Star):
             player: 玩家名称
         """
         logger.info(f"[MC事件] 玩家 {player} 加入了游戏")
-        await self._forward_system_event(f"玩家 {player} 加入了游戏")
+        await self._forward_system_event("join", f"玩家 {player} 加入了游戏")
         if self.enable_system_event_context:
             await self._send_system_event(player, f"[系统消息] {player} 加入了游戏")
     
@@ -224,7 +237,7 @@ class MCManagerPlugin(Star):
             player: 玩家名称
         """
         logger.info(f"[MC事件] 玩家 {player} 离开了游戏")
-        await self._forward_system_event(f"玩家 {player} 离开了游戏")
+        await self._forward_system_event("leave", f"玩家 {player} 离开了游戏")
         if self.enable_system_event_context:
             await self._send_system_event(player, f"[系统消息] {player} 离开了游戏")
     
@@ -237,7 +250,7 @@ class MCManagerPlugin(Star):
             advancement: 成就名称
         """
         logger.info(f"[MC事件] 玩家 {player} 达成了成就 [{advancement}]")
-        await self._forward_system_event(f"玩家 {player} 达成了成就 [{advancement}]")
+        await self._forward_system_event("advancement", f"玩家 {player} 达成了成就 [{advancement}]")
         if self.enable_system_event_context:
             await self._send_system_event(player, f"[系统消息] {player} 达成了成就 [{advancement}]")
     
@@ -250,7 +263,7 @@ class MCManagerPlugin(Star):
             reason: 死因描述
         """
         logger.info(f"[MC事件] 玩家死亡: {reason}")
-        await self._forward_system_event(reason)
+        await self._forward_system_event("death", reason)
         if self.enable_system_event_context:
             await self._send_system_event(player, f"[系统消息] {reason}")
     
@@ -756,10 +769,22 @@ class MCManagerPlugin(Star):
             if self.mc_bridge_prefix
             else "游戏内聊天"
         )
-        if self.enable_system_event_forward:
-            push_desc = f"{bridge_hint}与系统事件将推送到本群"
+        # 按实际打开的事件类型拼回执，避免只说"已关闭"却没说哪些还开着
+        enabled_events = [
+            label
+            for label, event_type in (
+                ("进服", "join"),
+                ("退服", "leave"),
+                ("死亡", "death"),
+                ("成就", "advancement"),
+            )
+            if self.system_event_push.get(event_type, False)
+        ]
+        if enabled_events:
+            events_desc = "/".join(enabled_events)
+            push_desc = f"{bridge_hint}与系统事件（{events_desc}）将推送到本群"
         else:
-            push_desc = f"{bridge_hint}将推送到本群（系统事件推送已在配置中关闭）"
+            push_desc = f"{bridge_hint}将推送到本群（系统事件推送未开启）"
         yield event.plain_result(
             f"✓ 已绑定本群为MC消息转发目标（平台: {event.get_platform_name()}）\n"
             f"{push_desc}；发送 mc解绑 可解除。"
