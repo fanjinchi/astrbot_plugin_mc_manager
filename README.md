@@ -64,6 +64,8 @@ broadcast-rcon-to-ops=true
 | `vanilla_zh_download` | 重建时自动下载官方原版 zh_cn.json（按版本、sha1校验、失败回退BMCLAPI） | `true` |
 | `cfpa_auto_download` | 重建时自动下载 CFPA 汉化资源包（GitHub 失败回退 BMCLAPI） | `true` |
 
+> **升级提示**：旧版的 `enable_system_event_forward` 已移除，升级后进服/退服/死亡/成就四类系统事件推送**默认全部关闭**，需要在面板的"系统事件推送到群"分组里重新勾选要推送的类型。
+
 配置示例：
 ```json
 {
