@@ -11,6 +11,11 @@ from aiomcrcon.errors import ClientNotConnectedError, RCONConnectionError
 from typing import Optional
 from astrbot.api import logger
 
+try:  # 以插件包导入（生产）
+    from .rcon_help import ScanLimits, scan_help
+except ImportError:  # 以顶层模块导入（tests/ 直接把插件目录放进 sys.path）
+    from rcon_help import ScanLimits, scan_help
+
 
 # 值得断开重连后重试的异常：aiomcrcon 的连接错误不是 OSError 子类，必须显式列出；
 # struct.error 是连接已断时读到空包的表现（停服/重启后首条命令）。
@@ -148,6 +153,25 @@ class MinecraftRCON:
         except Exception as e:
             return False, f"连接失败: {str(e)}"
     
+    async def scan_help_commands(
+        self, limits: ScanLimits | None = None
+    ) -> tuple[dict | None, dict]:
+        """用独立扫描 socket 采集 RCON help 命令树（整次扫描持有 _send_lock）。
+
+        服务端不同 RCON socket 共享同一反馈缓冲，所以扫描必须与普通命令走同一个
+        互斥边界；锁覆盖整次扫描，普通命令在扫描结束前只会排队等待，不会在 A/B
+        交换之间写入。返回 (snapshot | None, report)，失败只关闭扫描 socket，
+        不改动现有普通连接。
+
+        Args:
+            limits: rcon_help.ScanLimits；None 用内部默认预算（不新增配置项）
+
+        Returns:
+            (未写盘的 rcon 快照或 None, 诊断报告)
+        """
+        async with self._send_lock:
+            return await scan_help(self.host, self.port, self.password, limits)
+
     async def close(self):
         """关闭RCON连接"""
         async with self._lock:

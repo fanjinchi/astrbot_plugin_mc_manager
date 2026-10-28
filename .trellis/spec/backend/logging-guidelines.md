@@ -16,10 +16,12 @@ from astrbot.api import logger
 
 一个例外，在"框架外"的代码：
 
-- `tools/*.py` 与 `text_outbound.py` **完全不产生日志**（0 处 logger/print）。信息随返回字符串回到 LLM/用户；排障看调用侧或
-  RCON 层那条命令日志。新增 tools 函数请保持这一点。
+- `tools/*.py`、`text_outbound.py` 与 `rcon_help.py` **完全不产生日志**（0 处 logger/print）。信息随返回字符串/
+  report 回到 LLM/用户或管理员回执；排障看调用侧或 RCON 层那条命令日志。新增 tools 函数请保持这一点；
+  `rcon_help.py` 的扫描失败原因通过 `(None, report)` 交给 `main.py` 记录。
 
-当前分布（main.py / rcon_client.py / log_watcher.py）：`info` 26 处、`error` 15 处、`warning` 7 处、`debug` 1 处。
+当前分布（main.py / rcon_client.py / log_watcher.py）：`info` 27 处、`error` 18 处（另有 `logger.exception` 2 处）、
+`warning` 10 处、`debug` 1 处；2026-10 RCON help 扫描入口新增 3 处 error、1 处 warning、1 处 exception。
 
 ---
 

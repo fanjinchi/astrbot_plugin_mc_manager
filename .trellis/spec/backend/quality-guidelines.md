@@ -10,7 +10,10 @@
 （标准库 `unittest`，2026-10 命令知识库任务新建）。Lint 配置继承 AstrBot 根项目 `pyproject.toml`
 （`line-length = 88`，select `F/W/E/ASYNC/C4/Q/I/UP`，排除 `tests`）；根项目的历史文件并未 reformat，
 所以**只在新增/改动文件上跑 `ruff format`/`ruff check`**，不做全仓 reformat——否则会产生几十个文件的无关 diff。
-目标是**不同时新增错误类型**；剩余告警都是仓库既有的 `UP031`（`%` 格式化）/ `UP045`（`Optional`），
+目标是**不同时新增错误类型**：以 `git show HEAD:<file>` 为基线对比，新增行必须零告警（2026-10-28 实测
+`main.py` 工作区/HEAD 均为 162 例，新增 226 行零命中；`rcon_client.py` +24 行、`kb/commands.py` +1 行同理）。
+存量告警集中在两个从未 reformat 的 CRLF 文件：`W293`（行尾空白，148 例）、`I001`、`E722`、`UP045`、
+`W292`、`Q000/Q002`、`F541`、`F401`；`kb/commands.py` 等既有文件仍有 `UP031`（`%` 格式化）风格。
 不要为了清零在单文件里混用两种风格；要彻底干净需要单独的「全仓 ruff 基线」任务。
 
 因此：不要说"测试通过"就完事。能说的是"离线用例通过 + 编译通过 + 真机验证过哪条链路"。
@@ -132,10 +135,10 @@ async def give_item(player: str, item: str, count: int = 1) -> str:
 
 1. **必做：编译检查 + 离线用例**
    ```bash
-   python3 -m compileall -q main.py rcon_client.py log_watcher.py text_outbound.py runtime_dump.py tools/ kb/ tests/
+   python3 -m compileall -q main.py rcon_client.py rcon_help.py log_watcher.py text_outbound.py runtime_dump.py tools/ kb/ tests/
    python3 -m unittest discover -s tests -v
    ```
-   `tests/` 覆盖命令快照契约（校验/发布/导入/查询聚合）与 dump 回执；新增契约时补对应用例，
+   `tests/` 覆盖命令快照契约（校验/发布/导入/查询聚合）、dump 回执与 RCON help 采集（fake server 协议/解析/入口）；新增契约时补对应用例，
    不要为"证明正确"造框架，也不要拿 mock 用例充当真机证据。
 2. **改了导入/装配：导入冒烟**。确认 `python3 -c "import ast; ast.parse(open('main.py').read())"` 之外，
    重点核对 `_inject_rcon()` 里有没有漏注入或写错模块名。

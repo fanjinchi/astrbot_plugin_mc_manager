@@ -499,6 +499,7 @@ def _runtime_note(producer: str) -> str:
         return (
             "注：运行时语法来自 RCON help，根命令与一级子命令可还原，更深分支是压缩语法"
             "（(a|b)、[x]、...），不能当作完整参数；实际执行还受 RCON 可见性限制。"
+            "纯根命令可能未收录（targeted 空响应不代表裸根不可执行）。"
         )
     if producer == "kubejs":
         return (

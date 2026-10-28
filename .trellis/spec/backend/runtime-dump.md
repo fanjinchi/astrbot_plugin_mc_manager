@@ -23,6 +23,9 @@
 | builder 读取 | `_load_runtime_dumps(server_dir, data_dir, rows, warnings) -> dict`；`_read_dump_objects(path) -> list|None`；名为 `commands` 的 stem 直接跳过 | `kb/builder.py:167/142` |
 | 命令快照发布/导入 | `publish_snapshot(snapshot, data_dir)`（mkstemp + `os.replace` 原子替换）、`import_snapshot(server_dir, data_dir) -> {status,count,roots,producer,warning}` | `kb/commands.py:143/169` |
 | 命令快照读取/查询 | `load_snapshot(data_dir) -> (snapshot, warning)` 每次查询重读；`search_commands(keyword, limit, data_dir)` 聚合 | `kb/commands.py:226/386` |
+| RCON 扫描入口 | `/mc_kb_rcon_scan`（async generator，先 `_check_permission`，单飞锁 + 活动任务登记，`terminate()` 有界取消） | `main.py` |
+| RCON 扫描客户端 | `MinecraftRCON.scan_help_commands(limits=None) -> tuple[dict | None, dict]`，整次扫描持有现有 `_send_lock` | `rcon_client.py` |
+| RCON 扫描实现 | `rcon_help.scan_help(host, port, password, limits=None) -> (snapshot | None, report)`：独立 socket、A/B 状态机、两阶段采集、严格解析 | `rcon_help.py` |
 
 ## 3. Contracts
 
@@ -64,6 +67,25 @@
   正常返回、reload 后变 `Unknown command or insufficient permissions`；同一副本首轮导出 184 根 / 2038 条，
   重启后不 reload 再导出 188 根 / 2061 条。首次部署 `runtime_dump.js` 必触发 `/reload`，因此首轮快照可能缺这类根；
   需要完整命令树时应在脚本已部署（不再 reload）的稳定态导出，或部署后重启服务器再 dump。
+
+### 3.1.2 RCON help 回退生产者（`producer="rcon"`）
+- 入口只有 `/mc_kb_rcon_scan`（管理员显式触发）；不在查询或 `execute_command` 前扫描，KubeJS 导出失败也不自动 fallback。
+- 传输：独立低层 socket + stdlib framing，**不使用** aiomcrcon 单包 `send_cmd()`；每次查询是一次 A/B 交换，
+  收到 A 首包（合法空包也算）后才发 B 哨兵，收到 B 才算 A 收完；最后一次 B 后有界尾随窗口，静默到期算完成、
+  窗口内有包算失败。idle-drain 只能诊断，不能代替 B 判据。
+- 互斥：整次扫描在 `rcon_client.py` 的现有 `_send_lock` 内执行（服务端不同 socket 共享反馈缓冲），
+  普通命令在扫描结束前排队；文件校验/发布在锁外。前提是扫描期间没有其它 RCON 写入者，`_send_lock`
+  只能约束本插件自身，不能声称外部并发安全。
+- 财务/预算：根数 N 时正式扫描固定 `2N+4` 个请求（首末根 help + N 个 targeted，各配一个 B），
+  认证与能力探针不计入；根数/单响应片数/字节/总片数/总字节/交换与总超时/尾随窗口都是 `ScanLimits` 内部上限，
+  不新增用户配置。超限、错 id、EOF、截断、B 缺失、尾随包、首末根集合不一致、解析失败、空 entries 一律
+  失败关闭：返回 `(None, report)`，旧快照保持可查，不自动重试。
+- 解析：按 `/` 切候选行（不依赖换行），根级行只发现根集合与显式根 redirect；普通条目必须有目标根之后的一级
+  usage 证据（空 targeted 合法但产生零条目），`(a|b)`/`[x]`/`...` 保留在 `syntax`，`-> target` 拆成共享
+  `redirect`，裸 `->` 仅作为容错归一为 `...`；裸 targeted 根行、其它根前缀、本地化错误文本都失败关闭。
+- 发布：成功后主指令复用 `validate_snapshot()` + `publish_snapshot()` 原子替换同一 `commands.json`，与 KubeJS
+  共用消费链，schema 不变。生命周期：活动扫描任务登记在插件实例，`terminate()` 先取消并有界等待，扫描的
+  `finally` 关闭扫描 socket 后才返回。
 
 ### 3.2 完成信号
 - RCON 响应 = 命令执行结束后 `RconConsoleSource` 的缓冲，所以 `[rd] DONE` 出现即完成；**不用标记文件、不轮询、不做就绪探测**
@@ -114,6 +136,12 @@
 - `_format_counts`（`tests/test_runtime_dump.py`）：commands 不并入物品总数
 - `assets/runtime_dump.js`（`tests/test_dump_script.py` + `tests/js_dump_harness.js`，Node 桩执行真实脚本）：
   五类产物、RD_VERSION=3、五种 usage 形态（含外部 root 的 `prefix ->`）、dispatcher 抛错时只污染 `failed`、产物过 Python 契约校验
+- `tests/test_rcon_help.py`（标准库 fake server，本机回环）：
+  两阶段 `2N+4` 请求数、多包 A、合法空 A、B 不得先于 A 首包、根集合顺序变化可接受；EOF、截断 length/body、
+  坏终止字节、错/未知 id、B 缺失、尾随包、跨交换旧 id、交换超时、片/字节/根数预算、首末根集合不一致、
+  空 entries 全部失败关闭；失败/取消后扫描 socket 关闭、普通命令拿到自己的响应；`main.py` 入口级用例覆盖
+  非管理员零 RCON、重复调用不排队、KubeJS jar 拒绝（含 jar 元数据）、残留 `kubejs/` 目录只警告、
+  无本机目录 + `kb.enabled=False` 仍发布、失败回执进度、`terminate()` 取消活动扫描。
 - **尚未覆盖（待补）**：`_trigger` 的 Unknown→DONE / 重试 / 失败分支与 `execute_async` 的 socket 级超时语义。
   前者需要 fake RCON 客户端，后者依赖真实连接；目前靠真机验证，写用例时不要 mock 掉被验证的语义。
 
@@ -137,5 +165,11 @@
 - **Wrong**：归一化时直接用 `-`/空格 split 拆 `->`，或把显式 `->` 当普通子串去匹配 name/usage
   **Correct**：`->` 用哨兵保护整体保留，显式 `->` 只匹配 redirect 结构（`kb/commands.py:346-351`），
   且 redirect 不进入普通 `matched` usage
+- **Wrong**：把 `write(A); write(B)` 连写，或只等“若干毫秒没有新包”就认为 A 收完
+  **Correct**：A 首包到达后才发 B，收到 B 才算 A 结束；最后 B 后只用有界尾随窗口检查额外包
+- **Wrong**：targeted 空响应/根级 `/foo` 回填成普通 `syntax="foo"` 纯根
+  **Correct**：RCON 只发布有一级 usage 或显式 redirect 证据的条目，纯根可能不收录并在查询/README 说明
+- **Wrong**：扫描失败后复用被污染的连接、或对失败的 help 请求重发
+  **Correct**：只关闭独立扫描 socket、保留旧快照、整次扫描由管理员显式重跑
 - **Wrong**：首次部署脚本触发 `/reload` 后立刻导出，并假定 dispatcher 完整（实测 AE2 根在 reload 后消失，快照少 4 根 / 23 条）
   **Correct**：脚本已部署、未触发 reload 的稳定态导出；部署后重启服务器再 dump，并在 README 说明该限制

@@ -4,8 +4,10 @@ AstrBot MC服务器管理插件
 """
 
 import asyncio
+import json
 import os
 import time
+import zipfile
 from astrbot.api.star import Context, Star, register
 from astrbot.api.event import filter, AstrMessageEvent, MessageEventResult
 from astrbot.api import AstrBotConfig, logger
@@ -23,6 +25,31 @@ from .kb import commands as cmd_kb
 # _send_fake_event / _send_system_event 伪造事件的 self_id：用于识别“来自 MC 聊天”的伪造事件，
 # 防止游戏内聊天触发 QQ 侧的绑定/喊话命令
 FAKE_EVENT_SELF_ID = "astrbot_mc_plugin"
+
+
+def _toml_declares_kubejs(data: bytes) -> bool:
+    """只检查 Forge/NeoForge ``[[mods]]`` 段里的 modId，忽略依赖声明。
+
+    ``[[dependencies.<modid>]]`` 里的 ``modId="kubejs", mandatory=false`` 是可选
+    兼容依赖（createoreexcavation、ftb-xmod-compat 等常见 mod 都这么写），
+    不能当作“已安装 KubeJS”。
+    """
+    in_mods = False
+    for raw_line in data.decode("utf-8", "replace").splitlines():
+        line = raw_line.strip()
+        if not line or line.startswith("#"):
+            continue
+        if line.startswith("["):
+            in_mods = line.replace(" ", "").lower() == "[[mods]]"
+            continue
+        if not in_mods:
+            continue
+        key, sep, value = line.partition("=")
+        if not sep or key.strip().lower() != "modid":
+            continue
+        if value.strip().strip("\"'").lower() == "kubejs":
+            return True
+    return False
 
 
 @register(
@@ -125,6 +152,11 @@ class MCManagerPlugin(Star):
         
         # 运行时 dump 单飞锁：dump 期间不允许第二次并发触发（避免双份导出/RCON 响应串包）
         self._dump_lock = asyncio.Lock()
+
+        # RCON help 扫描单飞锁与活动任务：第二个指令立即回执，不排队发起第二轮扫描；
+        # 活动任务登记给 terminate()，卸载/重载时有界取消并等待扫描 socket 关闭。
+        self._rcon_scan_lock = asyncio.Lock()
+        self._rcon_scan_task = None
         
         # 注入RCON客户端到所有工具模块
         self._inject_rcon()
@@ -387,12 +419,28 @@ class MCManagerPlugin(Star):
     
     async def terminate(self):
         """插件禁用/重载时自动调用 - 清理资源"""
+        # 先取消活动中的 RCON help 扫描：扫描的 finally 会关闭独立扫描 socket，
+        # 不能让它继续在旧实例里写 RCON。
+        await self._cancel_active_scan()
         # 物品知识库按"连接即用即关"实现（store.py），没有需要关闭的长连接
         # 停止日志监听（含 daemon IO 线程与事件循环任务）
         if self.log_watcher:
             await self.log_watcher.stop()
         # 关闭 RCON 长连接（旧版漏关，靠 __del__ 兜底）
         await self.rcon.close()
+
+    async def _cancel_active_scan(self):
+        """有界取消活动扫描任务；上界内没结束就交给后台 finally 清理。"""
+        task = self._rcon_scan_task
+        if task is None or task.done():
+            return
+        task.cancel()
+        try:
+            # gather(return_exceptions=True) 不会因为子任务被取消而抛 CancelledError，
+            # 避免把 terminate 自身的取消信号一并吞掉。
+            await asyncio.wait_for(asyncio.gather(task, return_exceptions=True), timeout=5.0)
+        except asyncio.TimeoutError:
+            logger.warning("取消 RCON help 扫描超时，扫描 socket 将在后台清理")
     
     @filter.on_llm_response()
     async def on_llm_response(self, event: AstrMessageEvent, response: LLMResponse):
@@ -932,3 +980,181 @@ class MCManagerPlugin(Star):
             return
         
         yield event.plain_result(self.kb.status())
+
+    @filter.command("mc_kb_rcon_scan")
+    async def cmd_kb_rcon_scan(self, event: AstrMessageEvent):
+        """通过 RCON help 采集模组命令树（无 KubeJS 环境的回退生产者）"""
+        has_permission, error_msg = self._check_permission(event)
+        if not has_permission:
+            yield event.plain_result(error_msg)
+            return
+
+        if self.kb is None:
+            yield event.plain_result(
+                "知识库不可用：插件数据目录初始化失败，请查看 AstrBot 日志"
+            )
+            return
+
+        # 只认 mods/ 中的 KubeJS 正向证据；残留 kubejs/ 脚本目录不作为拒绝依据。
+        # 读上百个 jar 的元数据是阻塞 IO，放线程里，避免卡住 AstrBot 事件循环。
+        has_kubejs, jar_name = await asyncio.to_thread(self._local_kubejs_evidence)
+        if has_kubejs:
+            yield event.plain_result(
+                f"❌ 本机 mods/ 检测到 KubeJS（{jar_name}），请优先使用 /mc_kb_dump 的结构化导出。"
+                "本指令只用于没有 KubeJS 的环境；跨机目标无法自动证明，需管理员确认"
+            )
+            return
+
+        if self._rcon_scan_lock.locked():
+            yield event.plain_result(
+                "⏳ 已有 RCON help 扫描在进行中，请等它结束（结果会单独回执）"
+            )
+            return
+
+        # 锁在第一次 yield 之前拿到：locked() 检查与 async with 之间没有 await，不会并发放行。
+        async with self._rcon_scan_lock:
+            yield event.plain_result(
+                "⏳ 正在通过 RCON help 采集命令树：扫描期间请暂停其它 RCON 写入者"
+                "（服务器面板/其它管理员的独立连接）；本插件自己的 RCON 命令会排队，"
+                "建议在维护窗口执行。跨机部署时，执行本指令即表示你确认目标是"
+                "没有 KubeJS 的 fallback 环境（本机目录无法证明远程状态）"
+                + self._kubejs_dir_warning()
+            )
+
+            scan_task = asyncio.create_task(self.rcon.scan_help_commands())
+            self._rcon_scan_task = scan_task
+            try:
+                try:
+                    snapshot, report = await scan_task
+                except asyncio.CancelledError:
+                    raise
+                except Exception as exc:
+                    logger.exception("RCON help 扫描异常")
+                    yield event.plain_result(f"❌ RCON help 扫描异常：{exc}")
+                    return
+            finally:
+                self._rcon_scan_task = None
+
+            if snapshot is None:
+                if report.get("unexpected"):
+                    logger.error(f"[MC知识库] RCON help 扫描失败: {report.get('reason')}")
+                yield event.plain_result(self._format_scan_failure(report))
+                return
+
+            validated, reason = cmd_kb.validate_snapshot(snapshot)
+            if validated is None:
+                logger.error(f"[MC知识库] RCON 快照未通过共享校验: {reason}")
+                yield event.plain_result(
+                    f"❌ 采集结果未通过共享校验：{reason}（旧快照保持不变）"
+                )
+                return
+
+            ok, error = cmd_kb.publish_snapshot(validated, self.kb.data_dir)
+            if not ok:
+                logger.error(f"[MC知识库] RCON 快照发布失败: {error}")
+                yield event.plain_result(
+                    f"❌ 发布命令快照失败：{error}（旧快照保持不变）"
+                )
+                return
+
+            path = cmd_kb.snapshot_path(self.kb.data_dir)
+            yield event.plain_result(
+                self._format_scan_success(validated, report, path)
+            )
+
+    def _local_kubejs_evidence(self) -> tuple[bool, str]:
+        """只在本地 mods/ 找 KubeJS jar 证据，返回 (是否存在, 命中文件名)。
+
+        残留的 kubejs/ 脚本目录不算已安装证据（删掉 mod 但留下目录是常见真实状态）；
+        读取 jar 元数据是为了覆盖改了文件名的整合包。
+        """
+        if not self.mc_server_dir:
+            return False, ""
+        mods_dir = os.path.join(self.mc_server_dir, "mods")
+        if not os.path.isdir(mods_dir):
+            return False, ""
+        try:
+            names = os.listdir(mods_dir)
+        except OSError:
+            return False, ""
+        for name in names:
+            lower = name.lower()
+            if not lower.endswith((".jar", ".zip")):
+                continue
+            if "kubejs" in lower:
+                return True, name
+            if self._jar_mentions_kubejs(os.path.join(mods_dir, name)):
+                return True, name
+        return False, ""
+
+    @staticmethod
+    def _jar_mentions_kubejs(path: str) -> bool:
+        """判断 jar 的**本体** modid 是否 kubejs，不看可选依赖声明。
+
+        KubeJS 兼容附属常把 ``modId="kubejs", mandatory=false`` 写进
+        ``[[dependencies.*]]``（createoreexcavation、ftb-xmod-compat 等都是），
+        对整个文件做子串匹配会把真正的无 KubeJS 整合包误拒。
+        """
+        try:
+            with zipfile.ZipFile(path) as jar:
+                for entry in ("META-INF/mods.toml", "META-INF/neoforge.mods.toml"):
+                    try:
+                        data = jar.read(entry)
+                    except KeyError:
+                        continue
+                    if _toml_declares_kubejs(data):
+                        return True
+                try:
+                    data = jar.read("fabric.mod.json")
+                except KeyError:
+                    data = b""
+                if data:
+                    try:
+                        meta = json.loads(data)
+                    except ValueError:
+                        meta = None
+                    if isinstance(meta, dict) and str(meta.get("id", "")).lower() == "kubejs":
+                        return True
+        except Exception:
+            # 启发式检测读不动就当“没有 KubeJS 证据”：截断 jar、deflate 流损坏
+            # 会抛 OSError/BadZipFile/zlib.error，不能让一条坏 jar 让整条指令无声失败。
+            return False
+        return False
+
+    def _kubejs_dir_warning(self) -> str:
+        if not self.mc_server_dir:
+            return ""
+        if os.path.isdir(os.path.join(self.mc_server_dir, "kubejs")):
+            return "（提示：本机残留 kubejs/ 目录但未发现 KubeJS mod，按无 KubeJS 环境处理）"
+        return ""
+
+    def _format_scan_failure(self, report: dict) -> str:
+        phase = report.get("phase", "")
+        reason = report.get("reason", "未知原因")
+        failed_root = report.get("root") or "无"
+        return "\n".join(
+            [
+                f"❌ RCON help 扫描失败（阶段：{phase}）",
+                f"原因：{reason}",
+                f"进度：已完成 {report.get('completed_roots', 0)}/"
+                f"{report.get('root_count', 0)} 个根命令，失败根：{failed_root}",
+                f"请求 {report.get('requests', 0)} 次，片 {report.get('packets', 0)}，"
+                f"字节 {report.get('bytes', 0)}，耗时 {report.get('elapsed_ms', 0)}ms",
+                "旧命令快照保持不变；本次扫描不自动重试，请排查后重新执行整次扫描",
+            ]
+        )
+
+    def _format_scan_success(self, snapshot: dict, report: dict, path: str) -> str:
+        return "\n".join(
+            [
+                "✓ RCON help 命令树已发布",
+                f"根命令 {report.get('root_count', 0)} 个，"
+                f"用法/别名 {snapshot.get('count', 0)} 条",
+                f"请求 {report.get('requests', 0)} 次（2N+4），"
+                f"片 {report.get('packets', 0)}，字节 {report.get('bytes', 0)}，"
+                f"耗时 {report.get('elapsed_ms', 0)}ms",
+                f"发布路径：{path}",
+                "边界：一级子命令可还原，更深分支是 help 压缩语法；"
+                "纯根命令可能未收录，targeted 空响应不代表裸根不可执行",
+            ]
+        )

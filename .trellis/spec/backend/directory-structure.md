@@ -34,6 +34,7 @@ astrbot_plugin_mc_manager/
 ├── log_watcher.py          # LogWatcher：轮询本地 latest.log、轮转检测、把日志行解析成回调
 ├── text_outbound.py        # tellraw 命令构造 + UTF-8 字节预算切段（纯函数，可独立测试）
 ├── runtime_dump.py         # 运行时 dump 编排（/mc_kb_dump：部署脚本 → RCON 触发 → 解析反馈 → 重建）
+├── rcon_help.py            # RCON help 回退采集：stdlib framing、A/B 状态机、两阶段采集、严格解析（/mc_kb_rcon_scan）
 ├── tools/
 │   ├── __init__.py         # 显式导出三个子模块（不用星号导入）
 │   ├── id_utils.py         # normalize_mc_id()：资源 ID 归一化（无命名空间才补 minecraft:）
@@ -52,7 +53,7 @@ astrbot_plugin_mc_manager/
 ├── assets/
 │   ├── vanilla_commands.json   # 原版命令固定知识库（随插件分发，非派生缓存）
 │   └── runtime_dump.js         # KubeJS 运行时注册表 + 命令树导出脚本（可选增强，JsonIO 直写 *.json）
-├── tests/                  # 标准库 unittest 离线回归（快照契约/回执/物品 dump 忽略命令快照）
+├── tests/                  # 标准库 unittest 离线回归（快照契约/回执/物品 dump/RCON fake server）
 ├── _conf_schema.json       # AstrBot WebUI 配置 schema（配置项唯一来源）
 ├── metadata.yaml           # 插件元信息（name/desc/author/version/repo）
 ├── requirements.txt        # 运行时依赖，目前只有 aio-mc-rcon
@@ -83,6 +84,7 @@ astrbot_plugin_mc_manager/
 | 新增一个 LLM 工具 | `main.py` 的 `tool_*`；实现下沉到 `tools/` |
 | 新增知识库能力（扫新来源/新查询） | `kb/` 对应模块；装配仍只在 `main.py` |
 | 改命令快照契约 / 查询聚合 | `kb/commands.py`（校验、原子发布、导入、聚合都在这里）；生产者侧改动见 runtime-dump.md |
+| 改 RCON help 采集 / 新扫描入口 | `rcon_help.py`（传输/解析/编排）+ `rcon_client.py` 的 `scan_help_commands()` + `main.py` 的 `/mc_kb_rcon_scan`；契约见 runtime-dump.md |
 | 新增运行时 dump / 知识库重建编排 | `runtime_dump.py`（编排 + 纯函数）；指令仍在 `main.py` |
 | 新增配置项 | `_conf_schema.json` + `main.py.__init__` 里 `self.config.get(...)` |
 | 新增 MC 日志事件 | `log_watcher.py` 加 `*_PATTERN` 常量 + 回调字段 + `set_*_callback` + `_process_log_line` 分支；`main.py` 加 `_on_*`，按需 `_forward_to_bound_group` / `_send_system_event` 上报 |
