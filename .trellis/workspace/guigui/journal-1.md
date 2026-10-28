@@ -191,4 +191,4 @@
 
 ### Next Steps
 
-- 阶段 9 清理 /home/guigui/mc/rcon-help-probe 与 /home/guigui/mc/ac4-roots
+- 阶段 9 清理已完成（`8f03bbe`）：`/home/guigui/mc/rcon-help-probe`、`/home/guigui/mc/ac4-roots` 及 `/tmp` 现场文件已删除；复跑 P6/阶段 7 验收需按 `research/03`、`research/04` 重新生成快照。
