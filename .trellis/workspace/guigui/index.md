@@ -8,8 +8,8 @@
 
 <!-- @@@auto:current-status -->
 - **Active File**: `journal-1.md`
-- **Total Sessions**: 5
-- **Last Active**: 2026-10-26
+- **Total Sessions**: 6
+- **Last Active**: 2026-10-28
 <!-- @@@/auto:current-status -->
 
 ---
@@ -19,7 +19,7 @@
 <!-- @@@auto:active-documents -->
 | File | Lines | Status |
 |------|-------|--------|
-| `journal-1.md` | ~159 | Active |
+| `journal-1.md` | ~194 | Active |
 <!-- @@@/auto:active-documents -->
 
 ---
@@ -29,6 +29,7 @@
 <!-- @@@auto:session-history -->
 | # | Date | Title | Commits | Branch |
 |---|------|-------|---------|--------|
+| 6 | 2026-10-28 | RCON help 回退验收与父任务收尾 | `52dcac0`, `613697b` | `master` |
 | 5 | 2026-10-26 | 模组命令树导入与命令搜索落地（KubeJS 主路径） | `fa32f49`, `df48fb0`, `7018f61`, `7140012`, `b4233d9` | `master` |
 | 4 | 2026-10-25 | 运行时 dump 一键化（/mc_kb_dump）实现并上线 | `e6b34d8`, `702d88d`, `5eb17af` | `master` |
 | 3 | 2026-10-24 | 聊天互通重构：本地日志直连 + Forge 兼容与绑定安全修复 | `3116aa6`, `faecb9f` | `master` |

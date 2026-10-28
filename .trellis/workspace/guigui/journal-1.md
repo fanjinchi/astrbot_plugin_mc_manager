@@ -157,3 +157,38 @@
 ### Status
 
 [OK] **Completed**
+
+
+## Session 6: RCON help 回退验收与父任务收尾
+<!-- trellis-session: v=2 fp=586e26930edbc151 -->
+
+**Date**: 2026-10-28
+**Task**: RCON help 回退验收与父任务收尾
+**Branch**: `master`
+
+### Summary
+
+无 KubeJS 的 RCON help 采集回退完成 P6 真机验收（CTI-nokubejs 179 根/474 条/2N+4；Farming-minimal wine 双版本还原）与父任务阶段 7 集成验收（两条生产者共用同一 validate/publish 与唯一 search_commands 消费链，producer 交换后输出逐字一致）。109 tests 通过；归档 RCON 子任务与父任务。
+
+### Main Changes
+
+- 新增 rcon_help.py、rcon_client.scan_help_commands、/mc_kb_rcon_scan 入口、tests/test_rcon_help.py；README/spec 记录回退边界与 2N+4 预算
+
+### Git Commits
+
+| Hash | Message |
+|------|---------|
+| `52dcac0` | feat(mc): 新增无 KubeJS 环境的 RCON help 命令采集回退 |
+| `613697b` | docs(task): 记录 RCON 子任务真机验收与父任务集成验收 |
+
+### Testing
+
+- [OK] python -m unittest discover -s tests（109 OK）、compileall、node --check、ruff 新增文件、git diff --check
+
+### Status
+
+[OK] **Completed**
+
+### Next Steps
+
+- 阶段 9 清理 /home/guigui/mc/rcon-help-probe 与 /home/guigui/mc/ac4-roots
