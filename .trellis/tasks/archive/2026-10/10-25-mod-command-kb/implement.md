@@ -11,8 +11,8 @@
 - [x] 5. RCON 子任务复用同一发布/查询契约，以独立 `/mc_kb_rcon_scan` 完成无 KubeJS 闭环、A/B 传输、纯根降级、可检验故障关闭、双版本分环境差分与 `2N+4` 性能记录（2026-10-28 完成，证据见 `.trellis/tasks/10-25-rcon-help-command-fallback/research/03-live-acceptance.md`；入口为生产方法级，未经过 AstrBot 消息分发层）。
 - [x] 6. 检索子任务完成英文调用引导、token AND、离线回归和实际 AstrBot 模型 5/5 召回；失败返回规划，不自动扩建中文语义层（2026-10-28 完成：49 tests、ruff 通过、AC4 真实模型 5/5，已归档）。
 - [x] 7. 父任务做最终集成验收：两个生产者不会留下第二套消费链，两种 producer 都使用同一查询改进，文档和 spec 一致，全部 AC 有证据（2026-10-28 完成，证据见 `research/04-integration-acceptance.md`：真实 KubeJS/RCON 快照经同一 `validate_snapshot`/`publish_snapshot` 发布，唯一 `search_commands` 消费链；producer 交换后除提示行输出逐字一致；AC1–AC7 证据索引齐全；顺带修正 README `2N+4` 组成描述与 quality-guidelines 的存量告警清单）。
-- [ ] 8. 仅在用户明确要求时提交；父任务在所有子任务验收后归档。
-- [ ] 9. **父任务收尾后清理隔离环境**（2026-10-28 用户要求记录）：删除 `/home/guigui/mc/rcon-help-probe`（4 个已停服副本、`MANIFEST.md`、`probe-disabled-mods/` 回滚清单与 `surgery-report.json`）和 `/home/guigui/mc/ac4-roots`（两个 ASTRBOT_ROOT 与 AC4 证据副本）；证据已归档到 `.trellis/tasks/archive/2026-10/*/research/`。
+- [x] 8. 仅在用户明确要求时提交；父任务在所有子任务验收后归档（2026-10-28 用户确认执行：工作提交 `52dcac0`、`613697b`，归档提交 `f159d16`、`cda6acf`，journal `9bee4cb`）。
+- [x] 9. **父任务收尾后清理隔离环境**（2026-10-28 用户要求记录）：删除 `/home/guigui/mc/rcon-help-probe`（4 个已停服副本、`MANIFEST.md`、`probe-disabled-mods/` 回滚清单与 `surgery-report.json`）和 `/home/guigui/mc/ac4-roots`（两个 ASTRBOT_ROOT 与 AC4 证据副本）；证据已归档到 `.trellis/tasks/archive/2026-10/*/research/`（2026-10-28 已删除，删除前 4.2G + 796K：确认无副本 java/探针进程、端口 25580-25584 关闭、原实例 `server.properties` SHA-256 与 mtime 仍与 MANIFEST 一致；`/tmp` 的 `p6-*`、`p7-*`、`ac4-*.log`、`ruff-cache` 一并清理）。
   - 删除前确认：副本服与探针进程全部退出（无 java/RCON socket）、原实例 `CTI0.46` 与 `Farming` 未被写入或改动、父任务已归档且不再引用这些路径。
   - 可一并清理 `/tmp` 下的 `ruff-cache`、`ac4-*.log` 与 probe 现场文件；清理后不改动任何已归档证据。
 
