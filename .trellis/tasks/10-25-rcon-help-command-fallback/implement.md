@@ -12,7 +12,24 @@
 - [x] P0 已记录扫描期间无其他 RCON 写入者的运行前提；双客户端同 ID 重复响应只作故障观察，不作为并发安全证明。
 - [x] 隔离副本的 KubeJS/附属 mod 处理、端口、启动命令和回滚清单已有记录；原实例未被修改。
 - [x] 回填后的独立评审已完成（2026-10-28），报告见 `research/02a-backfill-review.md`：无 P0，P1-1/P1-2/P1-3 与 4 处证据表述已在 §0 修订。
-- [ ] 用户开工许可仍未给出；不得以 P0 或文档回填替代 `task.py start` 前的审批。
+- [x] 用户开工许可已给出（2026-10-28，`task.py start` 已执行，状态 in_progress）。
+
+## 实施进度（2026-10-28）
+
+- P1–P4 已实现：`rcon_help.py`（传输/A-B 状态机/两阶段采集/严格解析）、`rcon_client.scan_help_commands()`、
+  `/mc_kb_rcon_scan` 入口与 `terminate()` 取消、`kb/commands.py` 的 RCON 降级提示。
+- P5 离线回归通过：`tests/` 95 个用例（其中 `tests/test_rcon_help.py` 46 个，含 fake server 协议故障与入口级用例）、
+  `compileall`、`node --check`、新增文件 ruff clean；既有文件的 ruff 规则类型集合与基线一致。
+- P7 文档/spec 已更新（README、`runtime-dump.md`、`directory-structure.md`、`logging-guidelines.md`、`quality-guidelines.md`）。
+- 两轴独立评审（2026-10-28，Standards + Spec 各一个子代理）：报 P0「KubeJS 门槛把可选依赖 `modId="kubejs" mandatory=false` 当已安装」，
+  已改为只认 `[[mods]]` 本体 modId / fabric `"id"` / 文件名，并用 CTI/Farming 的 no-KubeJS 与有 KubeJS 四个真实副本复验
+  （前两者 False、后两者 True；真实 core jar 改名后仍 True）。修复轮新子代理复核无 P0/P1，2 个 P2（坏 jar 的 `zlib.error`
+  让指令无声失败、`logger.exception` 计数写成 1）也已修；新增坏 jar 故障注入用例。当前 102 tests。
+- P6 真机 AC 验收已完成（2026-10-28）：CTI-nokubejs（1.19.2 无 KubeJS）闭环 179 根/474 条/362 请求；
+  新建 Farming-minimal（Forge 1.20.1 + Vinery，无 KubeJS）验证 `wine age <years>`/`wine info`（82 根/168 请求）；
+  双版本多包 A/B 包序列、入口级权限/单飞/KubeJS 拒绝/失败关闭/取消均已实测；AC6 在 CTI-kubejs/Farming-kubejs 做结构化导出 vs RCON
+  差分（2061/188 vs 493/164，2248/193 vs 667/162，无伪造根）。证据：`research/03-live-acceptance.md`。
+  限制：入口为生产方法级而非 AstrBot 消息分发级；副本服务器已停止，原实例未被写入。
 
 ## 0. 验证命令、环境门槛与方案修订（2026-10-28 评审回填）
 
@@ -245,9 +262,10 @@ RUFF_CACHE_DIR=/tmp/ruff-cache ruff format --check tests/test_commands.py rcon_h
 git diff --check
 ```
 
-- [ ] 既有 runtime dump、命令查询、redirect、坏快照、vanilla、物品 builder 回归全部通过。
-- [ ] 普通 RCON 的签名、2 秒默认、连接重试、超时不重发和空反馈语义未改。
-- [ ] 没有 pytest、新运行时依赖、全仓 reformat 或仅 mock 冒充真机的结论。
+- [x] 既有 runtime dump、命令查询、redirect、坏快照、vanilla、物品 builder 回归全部通过（95 tests）。
+- [x] 普通 RCON 的签名、2 秒默认、连接重试、超时不重发和空反馈语义未改（`execute_async` 未改动）。
+- [x] 没有 pytest、新运行时依赖、全仓 reformat 或仅 mock 冒充真机的结论；`git diff --check` 需加
+  `-c core.whitespace=cr-at-eol`（`main.py`/`rcon_client.py`/`README.md` 本就是 CRLF，仓库未配置该选项）。
 
 **P5 回滚点**：按失败所属 P1–P4 小步回退，不以删除故障用例换取通过。
 
@@ -263,13 +281,13 @@ P0/P1 已确认的环境前置（2026-10-28 修订）：
 - 回滚清单以 `probe-disabled-mods/surgery-report.json` 为准（Farming core repack 后剩 12 个内嵌 jar，`MANIFEST.md` 的 14 个已过时）；副本目录、端口、启动命令和移动清单必须与之一致。
 - 扫描期间要求无其他 RCON 写入者；采样时记录该前提，不把一次未复现当作并发安全证明。
 
-- [ ] **AC1 无 KubeJS 闭环**：no-KubeJS 副本只配置 RCON，`kb.enabled=false`/无本机 `mc_server_dir` 也完成 `/mc_kb_rcon_scan` 与查询。1.20.1 用最小包（§0.3）验证 `wine age <years>` / `wine info`；CTI 使用该副本结构化对照中实际存在的浅树模组命令，不假定 CTI 有 `wine`。
-- [ ] **AC2 传输完整**：双版本各至少一个真实响应超过 4096 字符（根 help 或实测选定的长 targeted help），保存 A 首包→B→A 完→B 完的 id/片序列；`help execute` 只按实际长度记录，不用短响应冒充多包证据。扫描后普通 `list` 响应正确，不得以 idle 时间作为完整性证据。
-- [ ] **AC3 解析与提示**：真机浅树、redirect/压缩形态与离线夹具一致；查询显示 `producer=rcon`、深分支压缩和纯根可能未收录。
-- [ ] **AC4 可检验故障关闭**：结合 P1 fake server 的 EOF、截断、错/未知 id、B 缺失/窗口内尾随、超时、超限、静默尾随成功和旧 id 迟到，以及 P3 确定性 fake-server 的首尾根集合变化，证明旧快照 hash 不变、后续普通命令不受污染。空 targeted 不触发失败；不宣称任意中间删片、同根集热替换或外部 RCON 并发写入必然可检测。
-- [ ] **AC5 能力检测与管理入口**：真实 `help help` / `help 1` / 不存在命令探针和结构化异常 fake server 均有明确回执，错误文本未写入知识库。至少一条经生产 `/mc_kb_rcon_scan` 入口验证；保留非管理员零 RCON、第二次调用不排队、KubeJS 环境拒绝、失败根/进度/耗时回执的入口级证据，并记录扫描中取消/重载后的 socket 清理。
-- [ ] **AC6 分环境差分与性能**：AC1 使用 no-KubeJS 副本；AC6 则在有 KubeJS 副本对同一 dispatcher 先后取得结构化导出和 P0/测试探针的 RCON A/B 结果，比较发现根集合与一级子命令集合。记录 RCON 发现根集合与已发布根集合的区别、深层压缩原因、纯根缺失、权限可见性、实际 `2N+4` 请求数和耗时。技术对照不得绕过生产 `/mc_kb_rcon_scan` 的 KubeJS 门槛，也不能用不同时间/不同 mod 状态的快照强行判等。
-- [ ] **AC7 文档素材**：保存跨机无本机目录、旧缓存保留、环境门槛和回滚的真实证据，供 P7 使用。
+- [x] **AC1 无 KubeJS 闭环**：no-KubeJS 副本只配置 RCON，`kb.enabled=false`/无本机 `mc_server_dir` 也完成 `/mc_kb_rcon_scan` 与查询。1.20.1 用最小包（§0.3）验证 `wine age <years>` / `wine info`；CTI 使用该副本结构化对照中实际存在的浅树模组命令，不假定 CTI 有 `wine`。
+- [x] **AC2 传输完整**：双版本各至少一个真实响应超过 4096 字符（根 help 或实测选定的长 targeted help），保存 A 首包→B→A 完→B 完的 id/片序列；`help execute` 只按实际长度记录，不用短响应冒充多包证据。扫描后普通 `list` 响应正确，不得以 idle 时间作为完整性证据。
+- [x] **AC3 解析与提示**：真机浅树、redirect/压缩形态与离线夹具一致；查询显示 `producer=rcon`、深分支压缩和纯根可能未收录。
+- [x] **AC4 可检验故障关闭**：结合 P1 fake server 的 EOF、截断、错/未知 id、B 缺失/窗口内尾随、超时、超限、静默尾随成功和旧 id 迟到，以及 P3 确定性 fake-server 的首尾根集合变化，证明旧快照 hash 不变、后续普通命令不受污染。空 targeted 不触发失败；不宣称任意中间删片、同根集热替换或外部 RCON 并发写入必然可检测。
+- [x] **AC5 能力检测与管理入口**：真实 `help help` / `help 1` / 不存在命令探针和结构化异常 fake server 均有明确回执，错误文本未写入知识库。至少一条经生产 `/mc_kb_rcon_scan` 入口验证；保留非管理员零 RCON、第二次调用不排队、KubeJS 环境拒绝、失败根/进度/耗时回执的入口级证据，并记录扫描中取消/重载后的 socket 清理。
+- [x] **AC6 分环境差分与性能**：AC1 使用 no-KubeJS 副本；AC6 则在有 KubeJS 副本对同一 dispatcher 先后取得结构化导出和 P0/测试探针的 RCON A/B 结果，比较发现根集合与一级子命令集合。记录 RCON 发现根集合与已发布根集合的区别、深层压缩原因、纯根缺失、权限可见性、实际 `2N+4` 请求数和耗时。技术对照不得绕过生产 `/mc_kb_rcon_scan` 的 KubeJS 门槛，也不能用不同时间/不同 mod 状态的快照强行判等。
+- [x] **AC7 文档素材**：保存跨机无本机目录、旧缓存保留、环境门槛和回滚的真实证据，供 P7 使用。
 
 若同根集合 reload 前后结构变化但 help 无法发现，记录为协议限制而非失败关闭通过证据；若出现已定义可检测故障仍发布，阻断验收并回对应阶段。
 
@@ -294,8 +312,8 @@ RUFF_CACHE_DIR=/tmp/ruff-cache ruff format --check tests/test_commands.py rcon_h
 git diff --check
 ```
 
-- [ ] README、spec、父设计和实际行为一致，尤其不恢复 N+1、idle-drain、空 targeted 回填纯根或全局原子快照承诺。
-- [ ] 所有 AC 都有对应证据；未完成的实测项不勾选。
-- [ ] commit/push 仍只在用户明确要求时执行。
+- [x] README、spec、父设计和实际行为一致，尤其不恢复 N+1、idle-drain、空 targeted 回填纯根或全局原子快照承诺。
+- [x] 所有 AC 都有对应证据（见 `research/03-live-acceptance.md`）；未完成的实测项不勾选。
+- [x] commit/push 仍只在用户明确要求时执行（本次未提交）。
 
 **P7 回滚点**：文档可独立回退；任何行为与文档不一致先修文档或回产品阶段，不通过隐瞒限制收尾。

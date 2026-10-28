@@ -10,3 +10,4 @@
 {"file":".trellis/tasks/10-25-rcon-help-command-fallback/research/01-command-enumeration.md","reason":"无 KubeJS 方案选择、smart usage 与 RCON 传输风险。"}
 {"file":".trellis/tasks/archive/2026-10/10-26-command-intent-search/prd.md","reason":"第三子任务的离线先行启动口径和 AC4 真实模型完成门槛。"}
 {"file":".trellis/tasks/archive/2026-10/10-26-command-intent-search/research/01-intent-retrieval.md","reason":"英文 token AND、五目标查询和语义层非目标依据。"}
+{"file":".trellis/tasks/10-25-mod-command-kb/research/04-integration-acceptance.md","reason":"阶段 7 集成验收证据与 AC1–AC7 索引。"}

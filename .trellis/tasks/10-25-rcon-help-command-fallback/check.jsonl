@@ -25,3 +25,6 @@
 {"file":"tests/test_commands.py","reason":"运行共享 schema、查询、redirect 和 producer 回归。"}
 {"file":"tests/test_runtime_dump.py","reason":"运行既有 dump 和 RCON 错误语义回归。"}
 {"file":"tests/test_dump_script.py","reason":"运行 KubeJS 命令导出契约回归。"}
+{"file": "rcon_help.py", "reason": "核对 A 首包后 B、id 不复用、预算/超时失败关闭、解析严格性与取消清理。"}
+{"file": "tests/test_rcon_help.py", "reason": "运行协议故障、解析、编排与入口生命周期回归。"}
+{"file": ".trellis/tasks/10-25-rcon-help-command-fallback/research/03-live-acceptance.md", "reason": "逐 AC 核对真机证据、限制与环境保护。"}

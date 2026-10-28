@@ -56,13 +56,14 @@
 
 ## Acceptance Criteria
 
-- [ ] **AC1 主路径**：在含 KubeJS 和模组命令的服务器执行 `/mc_kb_dump` 后，`search_mc_commands` 能返回实际模组命令及当前 dispatcher 已注册的完整 usage 路径，且既有物品 dump/重建结果不回退；结果不得暗示当前调用者必然可执行。
-- [ ] **AC2 无 KubeJS fallback**：在移除 KubeJS 及必需附属 mod 的隔离副本，仅通过 RCON 完成 `/mc_kb_rcon_scan` 后，可查询 RCON 可见的模组根及一级子命令 usage（浅树如 `wine age <years>` / `wine info` 完整还原）；深层压缩和纯根可能未收录以 `producer=rcon` 标注，不冒充完整参数。
-- [ ] **AC3 原版兜底**：没有 KubeJS、dump 文件或 RCON 快照时，内置原版命令仍可搜索；运行时与内置条目不产生重复结果。
-- [ ] **AC4 元数据边界**：查询结果允许缺省 `source`/`level`，但 `name` 必定可用；纯内置 vanilla 条目保留现有来源/权限显示，运行时同根合并只继承内置 `desc/cat`，`level` 按未知处理、`source=unknown`，不推断当前运行时 mod 归属。KubeJS 快照的 `syntax` 是当前 dispatcher 已注册的完整 usage 路径，实际执行仍受权限和 source 限制；RCON 快照的 `syntax` 可能是 help 压缩语法且必须标注，不把未知信息伪造为确定值。
-- [ ] **AC5 失败安全**：EOF、截断 length/body、错/未知 request id、B 缺失/尾随、超时、片数/字节超限、非预期 help 输出、首尾根集合不一致或单个类别导出失败时，不发布部分快照、不覆盖旧有效缓存、不污染后续 RCON 响应；不承诺检测任意中间删片或同根集热替换。
-- [ ] **AC6 验证与文档**：离线测试覆盖多分支、redirect、多包、无换行、root-only/根与子 usage 并存、empty-targeted 和本地化/异常输出，证明 RCON 不伪造普通纯根而 KubeJS 纯根不变；README 与相关 Trellis spec 同步说明两条采集路径、A/B 与一致性边界和跨机命令数据流程（不扩张为完整物品迁移）。
-- [ ] **AC7 中文意图检索**：实际 AstrBot 模型对子任务三规定的 5 条中文意图均通过英文概念词召回正确根与目标 usage；原版中文 desc 搜索保持可用，未通过时不以自动中文生成或语义层自行扩 scope。
+- [x] **AC1 主路径**：在含 KubeJS 和模组命令的服务器执行 `/mc_kb_dump` 后，`search_mc_commands` 能返回实际模组命令及当前 dispatcher 已注册的完整 usage 路径，且既有物品 dump/重建结果不回退；结果不得暗示当前调用者必然可执行。
+- [x] **AC2 无 KubeJS fallback**：在移除 KubeJS 及必需附属 mod 的隔离副本，仅通过 RCON 完成 `/mc_kb_rcon_scan` 后，可查询 RCON 可见的模组根及一级子命令 usage（浅树如 `wine age <years>` / `wine info` 完整还原）；深层压缩和纯根可能未收录以 `producer=rcon` 标注，不冒充完整参数。
+- [x] **AC3 原版兜底**：没有 KubeJS、dump 文件或 RCON 快照时，内置原版命令仍可搜索；运行时与内置条目不产生重复结果。
+- [x] **AC4 元数据边界**：查询结果允许缺省 `source`/`level`，但 `name` 必定可用；纯内置 vanilla 条目保留现有来源/权限显示，运行时同根合并只继承内置 `desc/cat`，`level` 按未知处理、`source=unknown`，不推断当前运行时 mod 归属。KubeJS 快照的 `syntax` 是当前 dispatcher 已注册的完整 usage 路径，实际执行仍受权限和 source 限制；RCON 快照的 `syntax` 可能是 help 压缩语法且必须标注，不把未知信息伪造为确定值。
+- [x] **AC5 失败安全**：EOF、截断 length/body、错/未知 request id、B 缺失/尾随、超时、片数/字节超限、非预期 help 输出、首尾根集合不一致或单个类别导出失败时，不发布部分快照、不覆盖旧有效缓存、不污染后续 RCON 响应；不承诺检测任意中间删片或同根集热替换。
+- [x] **AC6 验证与文档**：离线测试覆盖多分支、redirect、多包、无换行、root-only/根与子 usage 并存、empty-targeted 和本地化/异常输出，证明 RCON 不伪造普通纯根而 KubeJS 纯根不变；README 与相关 Trellis spec 同步说明两条采集路径、A/B 与一致性边界和跨机命令数据流程（不扩张为完整物品迁移）。
+- [x] **AC7 中文意图检索**：实际 AstrBot 模型对子任务三规定的 5 条中文意图均通过英文概念词召回正确根与目标 usage；原版中文 desc 搜索保持可用，未通过时不以自动中文生成或语义层自行扩 scope。
+- 阶段 7 集成验收记录（AC1–AC7 逐项证据索引、单一消费链与文档一致性核对）：`.trellis/tasks/10-25-mod-command-kb/research/04-integration-acceptance.md`。
 
 ## Technical Research
 

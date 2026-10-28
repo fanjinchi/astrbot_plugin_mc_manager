@@ -22,7 +22,7 @@
 - [x] 在 CTI0.46（1.19.2）与 Farming（1.20.1）隔离副本完成多包、空包、A/B id 序列、禁止立即 A+B、共享锁和后续命令隔离实测，证据写入 `research/02-rcon-ab-probe.md`。
 - [x] P0 已填真实资源值并确认 design 上限；实测值见 `implement.md` P0.3 与 `research/02-rcon-ab-probe.md`。
 - [x] 回填后的独立评审已完成（2026-10-28，`research/02a-backfill-review.md`）：无 P0；P1 已按 `implement.md` §0 修订（ruff 验证门、KubeJS 门槛、1.20.1 换最小包）。
-- [ ] 用户开工许可仍未给出，不得仅因 P0/文档完成而启动产品实现。
+- [x] 用户开工许可已给出（2026-10-28），产品实现 P1–P4 已完成；P6 真机验收仍待执行。
 
 ## Requirements
 
@@ -48,17 +48,17 @@
 
 ## Acceptance Criteria
 
-- [ ] **AC1 无 KubeJS 闭环**：在移除 KubeJS 及必需附属 mod 的隔离副本（1.20.1 用最小包：Forge 1.20.1 + Vinery，不含 KubeJS，见 `implement.md` §0.3），仅配置 RCON 完成 `/mc_kb_rcon_scan` 后，`search_mc_commands` 能返回模组根及一级子命令 usage；1.20.1 最小包的浅树 `wine age <years>` / `wine info` 完整还原，CTI 用该副本实际存在的浅树命令验收；无一级子命令/redirect 证据的纯根可不出现在 RCON 快照中，不以根级 `/foo` 或空 targeted 补造。跨机场景不被 `kb.enabled` 或本机 `mc_server_dir` 阻断。
-- [ ] **AC2 传输完整**：在没有其他 RCON 写入者的前提下，超过 4096 字符的多包响应按 A/B request id 完整接收；B 缺失/错 id 等可观察故障失败关闭，后续普通 RCON 命令收到自己的响应而非遗留 help 分片。最后一次 B 后的尾随窗口静默到期算检查完成，窗口内收到尾随包才失败；idle-drain 不作为通过依据。
-- [ ] **AC3 解析正确**：无换行、多分支、redirect、深层 `(a|b)` 压缩和空 targeted 夹具得到预期结构；根级 `/foo`、root-only、`foo` 与 `foo bar` 并存夹具证明 RCON 不伪造普通纯根，真实 `-> target`（含 root target 的名字形式）正确拆分；裸 `->`（含尾部空白）仅作为额外容错/合成夹具归一为 `redirect="..."`，不得冒充本次实测形态，KubeJS 纯根保持不变。查询显示 `producer=rcon` 的深分支和“纯根可能未收录”说明。
-- [ ] **AC4 失败关闭**：EOF、截断 length/body、错/未知 id、B 缺失、B 后窗口内尾随包、交换/总超时、片数/字节超限、本地化错误、自定义异常 help、首尾根集合不一致及跨交换旧 id 迟到等场景不产生部分快照，旧缓存仍可查且后续命令不受污染；合法空 targeted 和最后 B 后尾随窗口静默不触发失败。首尾根集合变化优先用确定性 fake-server 验收；任意中间内容片删除、同根集热替换和外部 RCON 并发写入按 R8/R7 的不可保证边界记录，不虚构通过证据。
-- [ ] **AC5 能力检测与管理入口**：非标准 `help` 或无法确认结构/完整性时给出明确回执，不把错误文案写入知识库；`help help`、`help 1` 和不存在命令只作探针，不实现分页。非管理员零 RCON、重复调用不排队、KubeJS 环境拒绝、失败根/进度/耗时回执均有入口级测试或可重复人工记录；至少一条经生产 `/mc_kb_rcon_scan` 入口验证，而非只运行底层探针。
-- [ ] **AC6 分环境差分与性能**：AC1 在无 KubeJS 副本验收；AC6 在 CTI0.46（1.19.2）与 Farming（1.20.1）的有 KubeJS 隔离副本，对同一 dispatcher 做结构化导出与 RCON 探针对照，比较发现根集合和一级子命令集合，记录深层压缩、纯根缺失、权限差异、实际 `2N+4` 请求数及耗时。技术对照不开放 KubeJS 环境下的生产 fallback 入口。
-- [ ] **AC7 文档**：说明 `/mc_kb_rcon_scan`、管理员环境确认、扫描期间暂停其他 RCON 写入者、RCON 可见性、深分支与纯根降级、缓存优先级、失败处理、请求预算、尾随窗口语义、卸载取消和跨机使用方式。
+- [x] **AC1 无 KubeJS 闭环**：在移除 KubeJS 及必需附属 mod 的隔离副本（1.20.1 用最小包：Forge 1.20.1 + Vinery，不含 KubeJS，见 `implement.md` §0.3），仅配置 RCON 完成 `/mc_kb_rcon_scan` 后，`search_mc_commands` 能返回模组根及一级子命令 usage；1.20.1 最小包的浅树 `wine age <years>` / `wine info` 完整还原，CTI 用该副本实际存在的浅树命令验收；无一级子命令/redirect 证据的纯根可不出现在 RCON 快照中，不以根级 `/foo` 或空 targeted 补造。跨机场景不被 `kb.enabled` 或本机 `mc_server_dir` 阻断。
+- [x] **AC2 传输完整**：在没有其他 RCON 写入者的前提下，超过 4096 字符的多包响应按 A/B request id 完整接收；B 缺失/错 id 等可观察故障失败关闭，后续普通 RCON 命令收到自己的响应而非遗留 help 分片。最后一次 B 后的尾随窗口静默到期算检查完成，窗口内收到尾随包才失败；idle-drain 不作为通过依据。
+- [x] **AC3 解析正确**：无换行、多分支、redirect、深层 `(a|b)` 压缩和空 targeted 夹具得到预期结构；根级 `/foo`、root-only、`foo` 与 `foo bar` 并存夹具证明 RCON 不伪造普通纯根，真实 `-> target`（含 root target 的名字形式）正确拆分；裸 `->`（含尾部空白）仅作为额外容错/合成夹具归一为 `redirect="..."`，不得冒充本次实测形态，KubeJS 纯根保持不变。查询显示 `producer=rcon` 的深分支和“纯根可能未收录”说明。
+- [x] **AC4 失败关闭**：EOF、截断 length/body、错/未知 id、B 缺失、B 后窗口内尾随包、交换/总超时、片数/字节超限、本地化错误、自定义异常 help、首尾根集合不一致及跨交换旧 id 迟到等场景不产生部分快照，旧缓存仍可查且后续命令不受污染；合法空 targeted 和最后 B 后尾随窗口静默不触发失败。首尾根集合变化优先用确定性 fake-server 验收；任意中间内容片删除、同根集热替换和外部 RCON 并发写入按 R8/R7 的不可保证边界记录，不虚构通过证据。
+- [x] **AC5 能力检测与管理入口**：非标准 `help` 或无法确认结构/完整性时给出明确回执，不把错误文案写入知识库；`help help`、`help 1` 和不存在命令只作探针，不实现分页。非管理员零 RCON、重复调用不排队、KubeJS 环境拒绝、失败根/进度/耗时回执均有入口级测试或可重复人工记录；至少一条经生产 `/mc_kb_rcon_scan` 入口验证，而非只运行底层探针。
+- [x] **AC6 分环境差分与性能**：AC1 在无 KubeJS 副本验收；AC6 在 CTI0.46（1.19.2）与 Farming（1.20.1）的有 KubeJS 隔离副本，对同一 dispatcher 做结构化导出与 RCON 探针对照，比较发现根集合和一级子命令集合，记录深层压缩、纯根缺失、权限差异、实际 `2N+4` 请求数及耗时。技术对照不开放 KubeJS 环境下的生产 fallback 入口。
+- [x] **AC7 文档**：说明 `/mc_kb_rcon_scan`、管理员环境确认、扫描期间暂停其他 RCON 写入者、RCON 可见性、深分支与纯根降级、缓存优先级、失败处理、请求预算、尾随窗口语义、卸载取消和跨机使用方式。
 
 ## Research
 
 - `research/01-command-enumeration.md`：无 KubeJS 方案比较、对应版本源码证据、RCON 风险与最小实测清单。
 - `research/02-rcon-ab-probe.md`：已产生的双版本 A/B、全量 `2N+4`、锁/隔离、并发和环境实测；原始 `p0-*.json` 保留，字段限制与修正解释见该报告。
 - P0 另实测现有 `execute_async("help")` 截断 4096 字符并污染后续 `list`，因此长响应扫描必须独立低层 socket 且失败关连接；双客户端同 ID 重复响应的机制未定位，不得宣称 ID 匹配提供并发安全。
-- `research/03-live-acceptance.md`：P6 完成后产生的双副本 AC 验收证据；当前尚不存在，未完成前不得归档。
+- `research/03-live-acceptance.md`：P6 真机 AC 验收证据（2026-10-28）：CTI-nokubejs 闭环、Farming-minimal(1.20.1 无 KubeJS) `wine age/info`、双版本 A/B 包序列、KubeJS vs RCON 差分、入口级权限/单飞/门槛/取消。入口为生产 `cmd_kb_rcon_scan` 方法级（未经过 AstrBot 消息分发层）。

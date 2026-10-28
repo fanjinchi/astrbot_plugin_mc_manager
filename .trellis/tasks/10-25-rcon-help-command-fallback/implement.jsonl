@@ -25,3 +25,6 @@
 {"file":"tests/test_runtime_dump.py","reason":"普通 dump/RCON 错误语义和既有 rebuild 回归。"}
 {"file":"tests/test_dump_script.py","reason":"KubeJS 导出脚本和共享命令条目契约回归。"}
 {"file":"requirements.txt","reason":"确认不新增第三方依赖。"}
+{"file": "rcon_help.py", "reason": "新增低层传输/A-B 状态机/两阶段采集/严格解析实现，P1–P3 的直接落点。"}
+{"file": "tests/test_rcon_help.py", "reason": "fake server 协议故障、解析夹具与 main 入口级回归。"}
+{"file": ".trellis/tasks/10-25-rcon-help-command-fallback/research/03-live-acceptance.md", "reason": "P6 双版本真机 AC1–AC7 验收证据。"}
